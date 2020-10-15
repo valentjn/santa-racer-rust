@@ -1,0 +1,7 @@
+[package]
+name = "santa-racer"
+version = "0.1.0"
+authors = ["Julian Valentin <julian.valentin@bsplines.org>"]
+edition = "2018"
+
+[dependencies]
