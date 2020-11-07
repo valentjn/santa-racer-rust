@@ -11,8 +11,8 @@ pub struct SdlWrapper {
   sdl: sdl2::Sdl,
   pub canvas: sdl2::render::WindowCanvas,
   mixer: Option<sdl2::mixer::Sdl2MixerContext>,
-  pub event_pump: sdl2::EventPump,
   pub texture_creator: sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+  pub event_pump: sdl2::EventPump,
   screen_width: u32,
   screen_height: u32,
 }
@@ -45,15 +45,15 @@ impl SdlWrapper {
           AUDIO_NUMBER_OF_CHANNELS, AUDIO_CHUNK_SIZE).expect("Could not open audio");
     }
 
-    let event_pump = sdl.event_pump().expect("Could not create event pump");
     let texture_creator = canvas.texture_creator();
+    let event_pump = sdl.event_pump().expect("Could not create event pump");
 
     return SdlWrapper {
       sdl: sdl,
       canvas: canvas,
       mixer: mixer,
-      event_pump: event_pump,
       texture_creator: texture_creator,
+      event_pump: event_pump,
       screen_width: SCREEN_WIDTH,
       screen_height: SCREEN_HEIGHT,
     };
