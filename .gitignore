@@ -2,3 +2,5 @@
 /assets/songs/
 /assets/sounds/
 /target/
+
+/Cargo.lock
