@@ -11,11 +11,11 @@ use crate::assets::Point;
 pub struct Font<'a> {
   image: &'a Image<'a>,
   characters: String,
-  character_widths: Vec<u32>,
-  max_character_width: u32,
+  character_widths: Vec<i32>,
+  max_character_width: i32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 pub enum Alignment {
   TopLeft = 0,
   TopCenter = 1,
@@ -30,8 +30,8 @@ pub enum Alignment {
 
 impl<'a> Font<'a> {
   pub fn new<S: Into<String>>(image: &'a Image<'a>, characters: S,
-        character_widths: Vec<u32>) -> Font<'a> {
-    let max_character_width: u32 = *character_widths.iter().max().expect(
+        character_widths: Vec<i32>) -> Font<'a> {
+    let max_character_width: i32 = *character_widths.iter().max().expect(
       "No elements in character_widths");
 
     return Font {
@@ -58,23 +58,23 @@ impl<'a> Font<'a> {
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>,
         dst_point: &Point, text: S, alignment: Alignment, monospace: bool) {
     let text: String = text.into();
-    let frames: Vec<u32> = text.chars().map(
+    let frames: Vec<i32> = text.chars().map(
         |x| self.characters.chars().position(|y| y == x).unwrap_or_else(
         || self.characters.chars().position(|y| y == x.to_uppercase().next().unwrap_or('-'))
-          .unwrap_or(0)) as u32).collect();
+          .unwrap_or(0)) as i32).collect();
 
-    let text_character_widths: Vec<u32> =
+    let text_character_widths: Vec<i32> =
         frames.iter().map(|&x| self.character_widths[x as usize]).collect();
     let text_width: i32 = match monospace {
-      true => (text.len() as u32) * self.max_character_width,
+      true => (text.len() as i32) * self.max_character_width,
       false => text_character_widths.iter().sum(),
     } as i32;
     let text_height = self.image.height();
 
-    let mut dst_point = Point {
-      x: dst_point.x - ((alignment as i32) % 3) * (text_width / 2),
-      y: dst_point.y - ((alignment as i32) / 3) * ((text_height as i32) / 2),
-    };
+    let mut dst_point = Point::new(
+      dst_point.x - ((alignment as i32) % 3) * (text_width / 2),
+      dst_point.y - ((alignment as i32) / 3) * ((text_height as i32) / 2),
+    );
 
     for x in text.chars().zip(text_character_widths.iter()).zip(frames.iter()) {
       let ((character, character_width), frame) = x;

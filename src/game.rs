@@ -6,7 +6,7 @@
  */
 
 use crate::assets::AssetLibrary;
-use crate::assets::CloneAsU32Vector;
+use crate::assets::CloneAsI32Vector;
 use crate::assets::Point;
 use crate::options::Options;
 use crate::ui::Alignment;
@@ -16,7 +16,7 @@ pub struct Game<'a> {
   options: &'a Options,
 
   canvas: &'a mut sdl2::render::WindowCanvas,
-  canvas_size: (u32, u32),
+  canvas_size: Point,
   event_pump: &'a mut sdl2::EventPump,
   asset_library: &'a AssetLibrary<'a>,
 
@@ -49,14 +49,14 @@ const TARGET_FPS: f64 = 30.0;
 impl<'a> Game<'a> {
   pub fn new(canvas: &'a mut sdl2::render::WindowCanvas, event_pump: &'a mut sdl2::EventPump,
         asset_library: &'a AssetLibrary, options: &'a Options) -> Game<'a> {
-    let canvas_size = canvas.output_size().expect("Could not get output size of canvas");
+    let canvas_size = Point::from_u32_tuple(
+        canvas.output_size().expect("Could not get output size of canvas"));
 
     asset_library.get_song("music").play();
 
-    //let font = Font::new(image_library.get_asset("font").clone(&sdl_wrapper.texture_creator));
     let font = Font::new(asset_library.get_image("font"),
         "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ",
-        asset_library.get_data("fontCharacterWidths").clone_as_u32());
+        asset_library.get_data("fontCharacterWidths").clone_as_i32());
 
     return Game {
       options: options,
@@ -125,9 +125,9 @@ impl<'a> Game<'a> {
       _ => {},
     }
 
-    self.font.draw(self.canvas, &Point{x:0, y:0}, "Hello World", Alignment::TopLeft);
-    self.font.draw(self.canvas, &Point::from_u32_tuple(self.canvas_size),
-        format!("{:.0} FPS", self.fps), Alignment::BottomRight);
+    self.font.draw(self.canvas, &Point::zero(), "Hello World", Alignment::TopLeft);
+    self.font.draw(self.canvas, &self.canvas_size, format!("{:.0} FPS", self.fps),
+        Alignment::BottomRight);
 
     self.canvas.present();
   }

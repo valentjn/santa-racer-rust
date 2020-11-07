@@ -16,13 +16,13 @@ pub struct AssetLibrary<'a> {
   sound_library: SingleTypeAssetLibrary<Sound>,
 }
 
-pub trait CloneAsU32Vector {
-  fn clone_as_u32(&self) -> Vec<u32>;
+pub trait CloneAsI32Vector {
+  fn clone_as_i32(&self) -> Vec<i32>;
 }
 
-impl CloneAsU32Vector for Vec<f64> {
-  fn clone_as_u32(&self) -> Vec<u32> {
-    return self.iter().map(|x| *x as u32).collect();
+impl CloneAsI32Vector for Vec<f64> {
+  fn clone_as_i32(&self) -> Vec<i32> {
+    return self.iter().map(|x| *x as i32).collect();
   }
 }
 
@@ -34,7 +34,7 @@ pub struct Image<'a> {
   file_path: std::path::PathBuf,
   surface: sdl2::surface::Surface<'a>,
   texture: sdl2::render::Texture<'a>,
-  number_of_frames: (u32, u32),
+  number_of_frames: (i32, i32),
   mask: Vec<bool>,
 }
 
@@ -182,7 +182,7 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
         |file_path| {
           let asset_name = file_path.file_stem().expect("Could not get file stem").to_str()
               .expect("Could not convert file stem to string");
-          let number_of_frames: (u32, u32) = match numbers_of_frames.get(asset_name) {
+          let number_of_frames: (i32, i32) = match numbers_of_frames.get(asset_name) {
             Some(number_of_frames) => *number_of_frames,
             None => (1, 1),
           };
@@ -207,7 +207,7 @@ impl SingleTypeAssetLibrary<Sound> {
 
 impl<'a> Image<'a> {
   fn new<RenderTarget>(texture_creator: &'a sdl2::render::TextureCreator<RenderTarget>,
-        file_path: &std::path::Path, number_of_frames: (u32, u32),
+        file_path: &std::path::Path, number_of_frames: (i32, i32),
         mask: Option<Vec<bool>>) -> Image<'a> {
     let file_path_str = file_path.to_str().expect("Could not convert path to string");
     let surface = sdl2::image::LoadSurface::from_file(file_path).expect(
@@ -257,18 +257,18 @@ impl<'a> Image<'a> {
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(&self,
-        canvas: &mut sdl2::render::Canvas<RenderTarget>, dst_point: &Point, frame: u32) {
-    self.draw_blit(canvas, &sdl2::rect::Rect::new(0, 0, self.width(), self.height()),
+        canvas: &mut sdl2::render::Canvas<RenderTarget>, dst_point: &Point, frame: i32) {
+    self.draw_blit(canvas, &sdl2::rect::Rect::new(0, 0, self.width() as u32, self.height() as u32),
         dst_point, frame);
   }
 
   pub fn draw_blit<RenderTarget: sdl2::render::RenderTarget>(&self,
         canvas: &mut sdl2::render::Canvas<RenderTarget>,
-        src_rect: &sdl2::rect::Rect, dst_point: &Point, frame: u32) {
+        src_rect: &sdl2::rect::Rect, dst_point: &Point, frame: i32) {
     let src_rect = sdl2::rect::Rect::new(
-        src_rect.x() + (((frame % self.number_of_frames.0) * self.width()) as i32),
-        src_rect.y() + ((((frame / self.number_of_frames.0) % self.number_of_frames.1)
-          * self.height()) as i32), src_rect.width(), src_rect.height());
+        src_rect.x() + (frame % self.number_of_frames.0) * self.width(),
+        src_rect.y() + ((frame / self.number_of_frames.0) % self.number_of_frames.1)
+          * self.height(), src_rect.width(), src_rect.height());
 
     let dst_rect = sdl2::rect::Rect::new(dst_point.x, dst_point.y,
         src_rect.width(), src_rect.height());
@@ -276,10 +276,10 @@ impl<'a> Image<'a> {
     canvas.copy(&self.texture, src_rect, dst_rect).expect("Could not copy texture");
   }
 
-  pub fn collides(&self, point: &Point, frame: u32, other: &Image, other_point: &Point,
-        other_frame: u32) -> bool {
-    let (width, height) = (self.width() as i32, self.height() as i32);
-    let (other_width, other_height) = (other.width() as i32, other.height() as i32);
+  pub fn collides(&self, point: &Point, frame: i32, other: &Image, other_point: &Point,
+        other_frame: i32) -> bool {
+    let (width, height) = (self.width(), self.height());
+    let (other_width, other_height) = (other.width(), other.height());
 
     if ((point.x < other_point.x) && (point.x + width < other_point.x))
           || ((other_point.x < point.x) && (other_point.x + other_width < point.x))
@@ -312,17 +312,17 @@ impl<'a> Image<'a> {
 
     for clip_y in clip_rect.top() .. clip_rect.bottom() {
       for clip_x in clip_rect.left() .. clip_rect.right() {
-        let index = ((clip_x - point.x
-              + ((frame % number_of_frames.0) as i32) * width)
+        let index = (
+            (clip_x - point.x + (frame % number_of_frames.0) * width)
             + (clip_y - point.y
-              + (((frame / number_of_frames.0) % number_of_frames.1) as i32)
-              * (height as i32)) * surface_width) as usize;
+              + ((frame / number_of_frames.0) % number_of_frames.1)
+              * height) * surface_width) as usize;
 
-        let other_index = ((clip_x - other_point.x
-              + ((other_frame % other_number_of_frames.0) as i32) * other_width)
+        let other_index = (
+            (clip_x - other_point.x + (other_frame % other_number_of_frames.0) * other_width)
             + (clip_y - other_point.y
-              + (((other_frame / other_number_of_frames.0) % other_number_of_frames.1) as i32)
-              * (other_height as i32)) * other_surface_width) as usize;
+              + ((other_frame / other_number_of_frames.0) % other_number_of_frames.1)
+              * other_height) * other_surface_width) as usize;
 
         if mask[index] && other_mask[other_index] { return true; }
       }
@@ -331,15 +331,15 @@ impl<'a> Image<'a> {
     return false;
   }
 
-  pub fn width(&self) -> u32 {
-    return self.surface.width() / self.number_of_frames.0;
+  pub fn width(&self) -> i32 {
+    return (self.surface.width() as i32) / self.number_of_frames.0;
   }
 
-  pub fn height(&self) -> u32 {
-    return self.surface.height() / self.number_of_frames.1;
+  pub fn height(&self) -> i32 {
+    return (self.surface.height() as i32) / self.number_of_frames.1;
   }
 
-  pub fn size(&self) -> (u32, u32) {
+  pub fn size(&self) -> (i32, i32) {
     return (self.width(), self.height());
   }
 
@@ -402,19 +402,15 @@ impl Sound {
 }
 
 impl Point {
+  pub const fn new(x: i32, y: i32) -> Point {
+    return Point{x: x, y: y};
+  }
+
   pub fn zero() -> Point {
     return Point{x: 0, y: 0};
   }
 
   pub fn from_u32_tuple(point: (u32, u32)) -> Point {
     return Point{x: point.0 as i32, y: point.1 as i32};
-  }
-
-  pub fn x(&self) -> i32 {
-    return self.x;
-  }
-
-  pub fn y(&self) -> i32 {
-    return self.y;
   }
 }
