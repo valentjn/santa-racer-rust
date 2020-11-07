@@ -72,26 +72,26 @@ impl<'a> Font<'a> {
     let text_height = self.image.height();
 
     let mut dst_point = Point::new(
-      dst_point.x - ((alignment as i32) % 3) * (text_width / 2),
-      dst_point.y - ((alignment as i32) / 3) * ((text_height as i32) / 2),
+      dst_point.x - (((alignment as i32) % 3) * (text_width / 2)) as f64,
+      dst_point.y - (((alignment as i32) / 3) * ((text_height as i32) / 2)) as f64,
     );
 
     for x in text.chars().zip(text_character_widths.iter()).zip(frames.iter()) {
       let ((character, character_width), frame) = x;
 
       if monospace {
-        dst_point.x += ((self.max_character_width as i32) -
-            (*character_width as i32)) / 2;
+        dst_point.x += ((self.max_character_width as f64) -
+            (*character_width as f64)) / 2.0;
       }
 
       if character != ' ' {
-        self.image.draw(canvas, &dst_point, *frame);
+        self.image.draw(canvas, &dst_point, *frame as f64);
       }
 
       dst_point.x += match monospace {
         true => self.max_character_width,
         false => *character_width,
-      } as i32;
+      } as f64;
     }
   }
 }

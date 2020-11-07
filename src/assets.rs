@@ -48,8 +48,8 @@ pub struct Sound {
 
 #[derive(Clone)]
 pub struct Point {
-  pub x: i32,
-  pub y: i32,
+  pub x: f64,
+  pub y: f64,
 }
 
 impl<'a> AssetLibrary<'a> {
@@ -257,20 +257,21 @@ impl<'a> Image<'a> {
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(&self,
-        canvas: &mut sdl2::render::Canvas<RenderTarget>, dst_point: &Point, frame: i32) {
+        canvas: &mut sdl2::render::Canvas<RenderTarget>, dst_point: &Point, frame: f64) {
     self.draw_blit(canvas, &sdl2::rect::Rect::new(0, 0, self.width() as u32, self.height() as u32),
         dst_point, frame);
   }
 
   pub fn draw_blit<RenderTarget: sdl2::render::RenderTarget>(&self,
         canvas: &mut sdl2::render::Canvas<RenderTarget>,
-        src_rect: &sdl2::rect::Rect, dst_point: &Point, frame: i32) {
+        src_rect: &sdl2::rect::Rect, dst_point: &Point, frame: f64) {
+    let frame = frame as i32;
     let src_rect = sdl2::rect::Rect::new(
-        src_rect.x() + (frame % self.number_of_frames.0) * self.width(),
+        src_rect.x() + (frame % self.number_of_frames.0) * (self.width() as i32),
         src_rect.y() + ((frame / self.number_of_frames.0) % self.number_of_frames.1)
-          * self.height(), src_rect.width(), src_rect.height());
+          * (self.height() as i32), src_rect.width(), src_rect.height());
 
-    let dst_rect = sdl2::rect::Rect::new(dst_point.x, dst_point.y,
+    let dst_rect = sdl2::rect::Rect::new(dst_point.x as i32, dst_point.y as i32,
         src_rect.width(), src_rect.height());
 
     canvas.copy(&self.texture, src_rect, dst_rect).expect("Could not copy texture");
@@ -301,7 +302,8 @@ impl<'a> Image<'a> {
         };
 
     let clip_rect = sdl2::rect::Rect::new(
-        point.x.max(other_point.x), point.y.max(other_point.y), clip_rect_width, clip_rect_height);
+        point.x.max(other_point.x) as i32, point.y.max(other_point.y) as i32,
+        clip_rect_width, clip_rect_height);
 
     let surface_width = self.surface.width() as i32;
     let other_surface_width = other.surface.width() as i32;
@@ -313,16 +315,18 @@ impl<'a> Image<'a> {
     for clip_y in clip_rect.top() .. clip_rect.bottom() {
       for clip_x in clip_rect.left() .. clip_rect.right() {
         let index = (
-            (clip_x - point.x + (frame % number_of_frames.0) * width)
-            + (clip_y - point.y
+            (clip_x - (point.x as i32)
+              + (frame % number_of_frames.0) * (width as i32))
+            + (clip_y - (point.y as i32)
               + ((frame / number_of_frames.0) % number_of_frames.1)
-              * height) * surface_width) as usize;
+              * (height as i32)) * surface_width) as usize;
 
         let other_index = (
-            (clip_x - other_point.x + (other_frame % other_number_of_frames.0) * other_width)
-            + (clip_y - other_point.y
+            (clip_x - (other_point.x as i32)
+              + (other_frame % other_number_of_frames.0) * (other_width as i32))
+            + (clip_y - (other_point.y as i32)
               + ((other_frame / other_number_of_frames.0) % other_number_of_frames.1)
-              * other_height) * other_surface_width) as usize;
+              * (other_height as i32)) * other_surface_width) as usize;
 
         if mask[index] && other_mask[other_index] { return true; }
       }
@@ -331,15 +335,15 @@ impl<'a> Image<'a> {
     return false;
   }
 
-  pub fn width(&self) -> i32 {
-    return (self.surface.width() as i32) / self.number_of_frames.0;
+  pub fn width(&self) -> f64 {
+    return (self.surface.width() as f64) / (self.number_of_frames.0 as f64);
   }
 
-  pub fn height(&self) -> i32 {
-    return (self.surface.height() as i32) / self.number_of_frames.1;
+  pub fn height(&self) -> f64 {
+    return (self.surface.height() as f64) / (self.number_of_frames.1 as f64);
   }
 
-  pub fn size(&self) -> (i32, i32) {
+  pub fn size(&self) -> (f64, f64) {
     return (self.width(), self.height());
   }
 
@@ -402,15 +406,15 @@ impl Sound {
 }
 
 impl Point {
-  pub const fn new(x: i32, y: i32) -> Point {
+  pub const fn new(x: f64, y: f64) -> Point {
     return Point{x: x, y: y};
   }
 
   pub fn zero() -> Point {
-    return Point{x: 0, y: 0};
+    return Point{x: 0.0, y: 0.0};
   }
 
   pub fn from_u32_tuple(point: (u32, u32)) -> Point {
-    return Point{x: point.0 as i32, y: point.1 as i32};
+    return Point{x: point.0 as f64, y: point.1 as f64};
   }
 }

@@ -128,7 +128,7 @@ impl<'a> Game<'a> {
       _ => "background",
     };
 
-    self.asset_library.get_image(background_image_name).draw(self.canvas, &Point::zero(), 0);
+    self.asset_library.get_image(background_image_name).draw(self.canvas, &Point::zero(), 0.0);
 
     match self.mode {
       Mode::NewHighscore => {
