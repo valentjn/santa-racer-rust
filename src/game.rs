@@ -98,11 +98,24 @@ impl<'a> Game<'a> {
     }
   }
 
-  fn check_keys(&self) {
+  fn check_keys(&mut self) {
+    let keyboard_state = self.event_pump.keyboard_state();
+
+    if (keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::LCtrl)
+          || keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::RCtrl))
+          && keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::C) {
+      self.quit_flag = true;
+    }
+
+    match self.mode {
+      // TODO
+      Mode::Running | Mode::Menu => {
+      },
+      _ => {},
+    }
   }
 
-  fn do_logic(&self) {
-
+  fn do_logic(&mut self) {
   }
 
   fn draw(&mut self) {
