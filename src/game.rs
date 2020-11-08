@@ -5,23 +5,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::assets::AssetLibrary;
+use crate::*;
 use crate::assets::CloneAsI32Vector;
 use crate::assets::Point;
-use crate::options::Options;
-use crate::ui::Alignment;
-use crate::ui::Font;
 
 pub struct Game<'a> {
-  options: &'a Options,
+  options: &'a options::Options,
 
   canvas: &'a mut sdl2::render::WindowCanvas,
   buffer_texture: sdl2::render::Texture<'a>,
   buffer_size: Point,
   event_pump: &'a mut sdl2::EventPump,
 
-  asset_library: &'a AssetLibrary<'a>,
-  font: Font<'a>,
+  asset_library: &'a assets::AssetLibrary<'a>,
+  font: ui::Font<'a>,
 
   mode: Mode,
 
@@ -35,8 +32,8 @@ pub struct Game<'a> {
 
 struct DrawArguments<'a> {
   buffer_size: Point,
-  asset_library: &'a AssetLibrary<'a>,
-  font: &'a Font<'a>,
+  asset_library: &'a assets::AssetLibrary<'a>,
+  font: &'a ui::Font<'a>,
   mode: &'a Mode,
   fps: f64,
 }
@@ -61,7 +58,7 @@ impl<'a> Game<'a> {
   pub fn new(canvas: &'a mut sdl2::render::WindowCanvas,
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         event_pump: &'a mut sdl2::EventPump,
-        asset_library: &'a AssetLibrary, options: &'a Options) -> Game<'a> {
+        asset_library: &'a assets::AssetLibrary, options: &'a options::Options) -> Game<'a> {
     let buffer_size = Point::from_u32_tuple(
         canvas.output_size().expect("Could not get output size of canvas"));
     let buffer_texture = texture_creator.create_texture_target(
@@ -69,7 +66,7 @@ impl<'a> Game<'a> {
 
     asset_library.get_song("music").play();
 
-    let font = Font::new(asset_library.get_image("font"),
+    let font = ui::Font::new(asset_library.get_image("font"),
         "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ",
         asset_library.get_data("fontCharacterWidths").clone_as_i32());
 
@@ -197,9 +194,9 @@ impl<'a> Game<'a> {
       _ => {},
     }
 
-    draw_arguments.font.draw(canvas, &Point::zero(), "Hello World", Alignment::TopLeft);
+    draw_arguments.font.draw(canvas, &Point::zero(), "Hello World", ui::Alignment::TopLeft);
     draw_arguments.font.draw(canvas, &draw_arguments.buffer_size,
-        format!("{:.0} FPS", draw_arguments.fps), Alignment::BottomRight);
+        format!("{:.0} FPS", draw_arguments.fps), ui::Alignment::BottomRight);
   }
 
   fn finish_frame(&mut self) {

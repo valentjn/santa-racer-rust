@@ -13,24 +13,17 @@ mod options;
 mod sdl;
 mod ui;
 
-use std::process;
-
-use crate::assets::AssetLibrary;
-use crate::game::Game;
-use crate::options::Options;
-use crate::sdl::SdlWrapper;
-
 fn main() {
-  let options = Options::load();
+  let options = options::Options::load();
 
-  let mut sdl_wrapper = SdlWrapper::new(&options);
+  let mut sdl_wrapper = sdl::SdlWrapper::new(&options);
 
-  let asset_library = AssetLibrary::new(&sdl_wrapper.texture_creator, &options);
+  let asset_library = assets::AssetLibrary::new(&sdl_wrapper.texture_creator, &options);
 
-  let mut game = Game::new(&mut sdl_wrapper.canvas, &sdl_wrapper.texture_creator,
+  let mut game = game::Game::new(&mut sdl_wrapper.canvas, &sdl_wrapper.texture_creator,
       &mut sdl_wrapper.event_pump, &asset_library, &options);
 
   game.run_loop();
 
-  process::exit(0);
+  std::process::exit(0);
 }

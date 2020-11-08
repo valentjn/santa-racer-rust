@@ -5,11 +5,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::assets::Image;
+use crate::*;
 use crate::assets::Point;
 
 pub struct Font<'a> {
-  image: &'a Image<'a>,
+  image: &'a assets::Image<'a>,
   characters: String,
   character_widths: Vec<i32>,
   max_character_width: i32,
@@ -29,7 +29,7 @@ pub enum Alignment {
 }
 
 impl<'a> Font<'a> {
-  pub fn new<S: Into<String>>(image: &'a Image<'a>, characters: S,
+  pub fn new<S: Into<String>>(image: &'a assets::Image<'a>, characters: S,
         character_widths: Vec<i32>) -> Font<'a> {
     let max_character_width: i32 = *character_widths.iter().max().expect(
       "No elements in character_widths");

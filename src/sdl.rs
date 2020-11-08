@@ -5,7 +5,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::options::Options;
+use crate::*;
 
 pub struct SdlWrapper {
   sdl: sdl2::Sdl,
@@ -24,7 +24,7 @@ const AUDIO_NUMBER_OF_CHANNELS: i32 = 2;
 const AUDIO_CHUNK_SIZE: i32 = 256;
 
 impl SdlWrapper {
-  pub fn new(options: &Options) -> SdlWrapper {
+  pub fn new(options: &options::Options) -> SdlWrapper {
     let sdl = sdl2::init().expect("Could not initialize SDL");
 
     let video_subsystem = sdl.video().expect("Could not initialize video subsystem");
