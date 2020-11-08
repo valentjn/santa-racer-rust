@@ -154,7 +154,8 @@ impl SingleTypeAssetLibrary<Vec<f64>> {
 }
 
 impl<'a> SingleTypeAssetLibrary<Image<'a>> {
-  pub fn load_assets<T>(&mut self, texture_creator: &'a sdl2::render::TextureCreator<T>,
+  pub fn load_assets(&mut self,
+        texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         verbose: bool) {
     let mut numbers_of_frames = std::collections::HashMap::new();
     numbers_of_frames.insert("angel", (13, 1));
@@ -206,7 +207,7 @@ impl SingleTypeAssetLibrary<Sound> {
 }
 
 impl<'a> Image<'a> {
-  fn new<RenderTarget>(texture_creator: &'a sdl2::render::TextureCreator<RenderTarget>,
+  fn new(texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         file_path: &std::path::Path, number_of_frames: (i32, i32),
         mask: Option<Vec<bool>>) -> Image<'a> {
     let file_path_str = file_path.to_str().expect("Could not convert path to string");
@@ -250,8 +251,9 @@ impl<'a> Image<'a> {
     return mask;
   }
 
-  pub fn clone<RenderTarget>(&self,
-        texture_creator: &'a sdl2::render::TextureCreator<RenderTarget>) -> Image<'a> {
+  pub fn clone(&self,
+        texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>) ->
+        Image<'a> {
     return Image::new(texture_creator, &self.file_path, self.number_of_frames,
         Some(self.mask.to_vec()));
   }
