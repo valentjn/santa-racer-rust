@@ -345,8 +345,8 @@ impl<'a> Image<'a> {
     return (self.surface.height() as f64) / (self.number_of_frames.1 as f64);
   }
 
-  pub fn size(&self) -> (f64, f64) {
-    return (self.width(), self.height());
+  pub fn size(&self) -> Point {
+    return Point::new(self.width(), self.height());
   }
 
   pub fn total_number_of_frames(&self) -> i32 {

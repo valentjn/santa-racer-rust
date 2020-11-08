@@ -13,8 +13,8 @@ pub struct Sleigh<'a> {
   sleigh_image: assets::Image<'a>,
   reindeer_image: assets::Image<'a>,
 
-  size: Point,
-  position: Point,
+  pub size: Point,
+  pub position: Point,
   speed: Point,
   acceleration: Point,
   sleigh_frame: f64,

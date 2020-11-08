@@ -10,6 +10,7 @@
 mod assets;
 mod fg_objects;
 mod game;
+mod level;
 mod options;
 mod sdl;
 mod ui;

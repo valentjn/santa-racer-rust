@@ -22,6 +22,8 @@ pub struct Game<'a> {
 
   mode: Mode,
 
+  landscape: level::Landscape<'a>,
+  level: level::Level<'a>,
   sleigh: fg_objects::Sleigh<'a>,
 
   target_fps: f64,
@@ -37,6 +39,8 @@ struct DrawArguments<'a> {
   asset_library: &'a assets::AssetLibrary<'a>,
   font: &'a ui::Font<'a>,
   mode: &'a Mode,
+  landscape: &'a level::Landscape<'a>,
+  level: &'a level::Level<'a>,
   sleigh: &'a fg_objects::Sleigh<'a>,
   fps: f64,
 }
@@ -73,6 +77,12 @@ impl<'a> Game<'a> {
         "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ",
         asset_library.get_data("fontCharacterWidths").clone_as_i32());
 
+    let landscape = level::Landscape::new(asset_library.get_image("landscape"));
+
+    let level = level::Level::new(buffer_size, asset_library.get_image("level"),
+        asset_library.get_data("backgroundObjectMap").to_vec(),
+        asset_library.get_data("foregroundObjectMap").to_vec());
+
     let sleigh = fg_objects::Sleigh::new(buffer_size,
         asset_library.get_image("sleigh").clone(texture_creator),
         asset_library.get_image("reindeer").clone(texture_creator));
@@ -91,6 +101,8 @@ impl<'a> Game<'a> {
       // TODO
       mode: Mode::Running,
 
+      landscape: landscape,
+      level: level,
       sleigh: sleigh,
 
       target_fps: TARGET_FPS,
@@ -151,6 +163,8 @@ impl<'a> Game<'a> {
   }
 
   fn do_logic(&mut self) {
+    self.landscape.do_logic(&self.level);
+    self.level.do_logic(&self.sleigh);
     self.sleigh.do_logic();
   }
 
@@ -160,6 +174,8 @@ impl<'a> Game<'a> {
       asset_library: &self.asset_library,
       font: &self.font,
       mode: &self.mode,
+      landscape: &self.landscape,
+      level: &self.level,
       sleigh: &self.sleigh,
       fps: self.fps,
     };
@@ -202,6 +218,8 @@ impl<'a> Game<'a> {
       Mode::NewHighscore => {
       },
       Mode::Menu | Mode::Highscores | Mode::Running => {
+        draw_arguments.landscape.draw(canvas);
+        draw_arguments.level.draw_background(canvas);
         draw_arguments.sleigh.draw(canvas);
       },
       _ => {},
