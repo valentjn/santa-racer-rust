@@ -8,6 +8,7 @@
 #![allow(dead_code)]
 
 mod assets;
+mod fg_objects;
 mod game;
 mod options;
 mod sdl;

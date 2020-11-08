@@ -46,7 +46,7 @@ pub struct Sound {
   chunk: sdl2::mixer::Chunk,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Point {
   pub x: f64,
   pub y: f64,
@@ -347,6 +347,10 @@ impl<'a> Image<'a> {
 
   pub fn size(&self) -> (f64, f64) {
     return (self.width(), self.height());
+  }
+
+  pub fn total_number_of_frames(&self) -> i32 {
+    return self.number_of_frames.0 * self.number_of_frames.1;
   }
 
   fn mask(&self) -> &Vec<bool> {
