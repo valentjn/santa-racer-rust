@@ -22,10 +22,15 @@ use crate::sdl::SdlWrapper;
 
 fn main() {
   let options = Options::load();
+
   let mut sdl_wrapper = SdlWrapper::new(&options);
+
   let asset_library = AssetLibrary::new(&sdl_wrapper.texture_creator, &options);
-  let mut game = Game::new(&mut sdl_wrapper.canvas, &mut sdl_wrapper.event_pump, &asset_library,
-      &options);
+
+  let mut game = Game::new(&mut sdl_wrapper.canvas, &sdl_wrapper.texture_creator,
+      &mut sdl_wrapper.event_pump, &asset_library, &options);
+
   game.run_loop();
+
   process::exit(0);
 }

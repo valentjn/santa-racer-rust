@@ -16,10 +16,11 @@ pub struct Game<'a> {
   options: &'a Options,
 
   canvas: &'a mut sdl2::render::WindowCanvas,
-  canvas_size: Point,
+  buffer_texture: sdl2::render::Texture<'a>,
+  buffer_size: Point,
   event_pump: &'a mut sdl2::EventPump,
-  asset_library: &'a AssetLibrary<'a>,
 
+  asset_library: &'a AssetLibrary<'a>,
   font: Font<'a>,
 
   mode: Mode,
@@ -30,6 +31,14 @@ pub struct Game<'a> {
   frame_counter: u32,
   last_frame_instant: Option<std::time::Instant>,
   last_fps_update_instant: Option<std::time::Instant>,
+}
+
+struct DrawArguments<'a> {
+  buffer_size: Point,
+  asset_library: &'a AssetLibrary<'a>,
+  font: &'a Font<'a>,
+  mode: &'a Mode,
+  fps: f64,
 }
 
 enum Mode {
@@ -44,13 +53,19 @@ enum Mode {
   NewHighscore,
 }
 
+const BUFFER_WIDTH: f64 = 640.0;
+const BUFFER_HEIGHT: f64 = 480.0;
 const TARGET_FPS: f64 = 30.0;
 
 impl<'a> Game<'a> {
-  pub fn new(canvas: &'a mut sdl2::render::WindowCanvas, event_pump: &'a mut sdl2::EventPump,
+  pub fn new(canvas: &'a mut sdl2::render::WindowCanvas,
+        texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+        event_pump: &'a mut sdl2::EventPump,
         asset_library: &'a AssetLibrary, options: &'a Options) -> Game<'a> {
-    let canvas_size = Point::from_u32_tuple(
+    let buffer_size = Point::from_u32_tuple(
         canvas.output_size().expect("Could not get output size of canvas"));
+    let buffer_texture = texture_creator.create_texture_target(
+        None, BUFFER_WIDTH as u32, BUFFER_HEIGHT as u32).expect("Could not create buffer texture");
 
     asset_library.get_song("music").play();
 
@@ -62,10 +77,11 @@ impl<'a> Game<'a> {
       options: options,
 
       canvas: canvas,
-      canvas_size: canvas_size,
+      buffer_texture: buffer_texture,
+      buffer_size: buffer_size,
+
       event_pump: event_pump,
       asset_library: asset_library,
-
       font: font,
 
       mode: Mode::Menu,
@@ -92,7 +108,21 @@ impl<'a> Game<'a> {
   fn process_events(&mut self) {
     for event in self.event_pump.poll_iter() {
       match event {
-        sdl2::event::Event::Quit { .. } => self.quit_flag = true,
+        sdl2::event::Event::Quit{..} => self.quit_flag = true,
+        sdl2::event::Event::KeyDown{keycode, keymod, ..} => {
+          let keycode = keycode.expect("Could not get keycode");
+
+          if (keymod.contains(sdl2::keyboard::Mod::LALTMOD)
+                || keymod.contains(sdl2::keyboard::Mod::RALTMOD))
+                && (keycode == sdl2::keyboard::Keycode::Return) {
+            let fullscreen_state = match self.canvas.window().fullscreen_state() {
+              sdl2::video::FullscreenType::True => sdl2::video::FullscreenType::Off,
+              _ => sdl2::video::FullscreenType::True,
+            };
+            self.canvas.window_mut().set_fullscreen(fullscreen_state).expect(
+                "Could not change fullscreen state");
+          }
+        },
         _ => {},
       }
     }
@@ -119,7 +149,38 @@ impl<'a> Game<'a> {
   }
 
   fn draw(&mut self) {
-    let background_image_name = match self.mode {
+    let draw_arguments = DrawArguments{
+      buffer_size: self.buffer_size,
+      asset_library: &self.asset_library,
+      font: &self.font,
+      mode: &self.mode,
+      fps: self.fps,
+    };
+
+    self.canvas.with_texture_canvas(&mut self.buffer_texture,
+        |canvas| Game::draw_to_canvas(canvas, draw_arguments)).expect("Could not draw to buffer");
+
+    let canvas_size = Point::from_u32_tuple(self.canvas.output_size().expect(
+        "Could not get output size of window canvas"));
+
+    let dst_rect = if canvas_size.x / canvas_size.y
+          >= self.buffer_size.x / self.buffer_size.y {
+      let dst_width = (self.buffer_size.x / self.buffer_size.y) * canvas_size.y;
+      sdl2::rect::Rect::new(((canvas_size.x - dst_width) / 2.0) as i32, 0,
+          dst_width as u32, canvas_size.y as u32)
+    } else {
+      let dst_height = (self.buffer_size.y / self.buffer_size.x) * canvas_size.x;
+      sdl2::rect::Rect::new(0, ((canvas_size.y - dst_height) / 2.0) as i32,
+          canvas_size.x as u32, dst_height as u32)
+    };
+
+    self.canvas.copy(&self.buffer_texture, None, dst_rect).expect(
+        "Could not copy buffer to window");
+    self.canvas.present();
+  }
+
+  fn draw_to_canvas(canvas: &mut sdl2::render::WindowCanvas, draw_arguments: DrawArguments) {
+    let background_image_name = match draw_arguments.mode {
       Mode::HelpPage1 => "help1",
       Mode::HelpPage2 => "help2",
       Mode::Won | Mode::NewHighscore => "won",
@@ -128,9 +189,9 @@ impl<'a> Game<'a> {
       _ => "background",
     };
 
-    self.asset_library.get_image(background_image_name).draw(self.canvas, &Point::zero(), 0.0);
+    draw_arguments.asset_library.get_image(background_image_name).draw(canvas, &Point::zero(), 0.0);
 
-    match self.mode {
+    match draw_arguments.mode {
       Mode::NewHighscore => {
       },
       Mode::Menu | Mode::Highscores | Mode::Running => {
@@ -138,11 +199,9 @@ impl<'a> Game<'a> {
       _ => {},
     }
 
-    self.font.draw(self.canvas, &Point::zero(), "Hello World", Alignment::TopLeft);
-    self.font.draw(self.canvas, &self.canvas_size, format!("{:.0} FPS", self.fps),
-        Alignment::BottomRight);
-
-    self.canvas.present();
+    draw_arguments.font.draw(canvas, &Point::zero(), "Hello World", Alignment::TopLeft);
+    draw_arguments.font.draw(canvas, &draw_arguments.buffer_size,
+        format!("{:.0} FPS", draw_arguments.fps), Alignment::BottomRight);
   }
 
   fn finish_frame(&mut self) {
