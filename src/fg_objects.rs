@@ -52,17 +52,6 @@ impl<'a> Sleigh<'a> {
     };
   }
 
-  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
-    let mut position = self.position;
-    self.sleigh_image.draw(canvas, &position, self.sleigh_frame);
-    position.x += self.sleigh_image.width() + self.reindeer_offset.x;
-    position.y += self.reindeer_offset.y;
-    self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
-    position.x -= self.reindeer_offset.x;
-    self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
-  }
-
   pub fn check_keys(&mut self, keyboard_state: &sdl2::keyboard::KeyboardState) {
     let drunk_factor = 1.0;
 
@@ -97,7 +86,6 @@ impl<'a> Sleigh<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
-
     self.position.x = (self.position.x
         + (seconds_since_last_update * (self.speed.x as f64)) as f64)
         .max(0.0).min(self.canvas_size.x - self.size.x);
@@ -110,5 +98,16 @@ impl<'a> Sleigh<'a> {
         (self.reindeer_image.total_number_of_frames() as f64) / 2.0;
 
     self.last_update_instant = now;
+  }
+
+  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+    let mut position = self.position;
+    self.sleigh_image.draw(canvas, &position, self.sleigh_frame);
+    position.x += self.sleigh_image.width() + self.reindeer_offset.x;
+    position.y += self.reindeer_offset.y;
+    self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
+    position.x -= self.reindeer_offset.x;
+    self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
   }
 }
