@@ -48,7 +48,7 @@ impl SdlWrapper {
     let texture_creator = canvas.texture_creator();
     let event_pump = sdl.event_pump().expect("Could not create event pump");
 
-    return SdlWrapper {
+    return SdlWrapper{
       sdl: sdl,
       canvas: canvas,
       mixer: mixer,

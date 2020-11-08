@@ -34,7 +34,7 @@ impl<'a> Font<'a> {
     let max_character_width: i32 = *character_widths.iter().max().expect(
       "No elements in character_widths");
 
-    return Font {
+    return Font{
       image: image,
       characters: characters.into(),
       character_widths: character_widths,

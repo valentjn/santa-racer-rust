@@ -58,7 +58,7 @@ impl<'a> Game<'a> {
         "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ",
         asset_library.get_data("fontCharacterWidths").clone_as_i32());
 
-    return Game {
+    return Game{
       options: options,
 
       canvas: canvas,

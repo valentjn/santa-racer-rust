@@ -29,7 +29,7 @@ struct ConfigFile {
 
 impl std::default::Default for ConfigFile {
   fn default() -> ConfigFile {
-    return ConfigFile {
+    return ConfigFile{
       highscores: Vec::new(),
     };
   }

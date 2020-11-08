@@ -68,7 +68,7 @@ impl<'a> AssetLibrary<'a> {
       sound_library.load_assets(options.verbose_enabled);
     }
 
-    return AssetLibrary {
+    return AssetLibrary{
       data_library: data_library,
       image_library: image_library,
       song_library: song_library,
@@ -95,7 +95,7 @@ impl<'a> AssetLibrary<'a> {
 
 impl<'a, AssetType> SingleTypeAssetLibrary<AssetType> {
   pub fn new() -> SingleTypeAssetLibrary<AssetType> {
-    return SingleTypeAssetLibrary {
+    return SingleTypeAssetLibrary{
       map: std::collections::HashMap::new(),
     };
   }
@@ -220,7 +220,7 @@ impl<'a> Image<'a> {
       None => Image::mask_from_surface(&surface),
     };
 
-    return Image {
+    return Image{
       file_path: file_path.to_path_buf(),
       surface: surface,
       texture: texture,
@@ -360,7 +360,7 @@ impl<'a> Song<'a> {
   fn new(file_path: &std::path::Path) -> Song<'a> {
     let file_path_str = file_path.to_str().expect("Could not convert path to string");
 
-    return Song {
+    return Song{
       music: sdl2::mixer::Music::from_file(file_path).expect(
           format!("Could not load song from {}", file_path_str).as_str()),
     };
@@ -375,7 +375,7 @@ impl Sound {
   fn new(file_path: &std::path::Path) -> Sound {
     let file_path_str = file_path.to_str().expect("Could not convert path to string");
 
-    return Sound {
+    return Sound{
       chunk: sdl2::mixer::Chunk::from_file(file_path).expect(
           format!("Could not load sound from {}", file_path_str).as_str()),
     };
