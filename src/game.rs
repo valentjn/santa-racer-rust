@@ -112,7 +112,11 @@ impl<'a> Game<'a> {
         sdl2::event::Event::KeyDown{keycode, keymod, ..} => {
           let keycode = keycode.expect("Could not get keycode");
 
-          if (keymod.contains(sdl2::keyboard::Mod::LALTMOD)
+          if (keymod.contains(sdl2::keyboard::Mod::LCTRLMOD)
+                || keymod.contains(sdl2::keyboard::Mod::RCTRLMOD))
+                && (keycode == sdl2::keyboard::Keycode::C) {
+            self.quit_flag = true;
+          } else if (keymod.contains(sdl2::keyboard::Mod::LALTMOD)
                 || keymod.contains(sdl2::keyboard::Mod::RALTMOD))
                 && (keycode == sdl2::keyboard::Keycode::Return) {
             let fullscreen_state = match self.canvas.window().fullscreen_state() {
@@ -130,12 +134,6 @@ impl<'a> Game<'a> {
 
   fn check_keys(&mut self) {
     let keyboard_state = self.event_pump.keyboard_state();
-
-    if (keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::LCtrl)
-          || keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::RCtrl))
-          && keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::C) {
-      self.quit_flag = true;
-    }
 
     match self.mode {
       // TODO
