@@ -232,6 +232,14 @@ def main():
           decodeRunLengthEncoding(srcFilePath)
 
         subprocess.run(["convert", srcFilePath, "-transparent", "magenta", f"png32:{dstFilePath}"])
+
+        if dstFileName == "level.png":
+          subprocess.run(["convert", dstFilePath, "-fill", "#000048",
+              "-draw", "rectangle 47,8078 124,8092",
+              "-draw", "rectangle 107,8075 124,8077",
+              "-family", "Palatino", "-style", "Normal", "-pointsize", "14",
+              "-fill", "white", "-gravity", "NorthWest",
+              "-annotate", "-1x-1+51+8080", "Frohes Fest", dstFilePath])
       elif dstExtension == ".wav":
         shutil.copyfile(srcFilePath, dstFilePath)
 
