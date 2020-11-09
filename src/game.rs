@@ -117,7 +117,7 @@ impl<'a> Game<'a> {
   pub fn run_loop(&mut self) {
     while !self.quit_flag {
       self.process_events();
-      self.check_keys();
+      self.check_keyboard_state();
       self.do_logic();
       self.draw();
       self.finish_frame();
@@ -151,12 +151,12 @@ impl<'a> Game<'a> {
     }
   }
 
-  fn check_keys(&mut self) {
+  fn check_keyboard_state(&mut self) {
     let keyboard_state = self.event_pump.keyboard_state();
 
     match self.mode {
       Mode::Running => {
-        self.sleigh.check_keys(&keyboard_state);
+        self.sleigh.check_keyboard_state(&keyboard_state);
       },
       _ => {},
     }

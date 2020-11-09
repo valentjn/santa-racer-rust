@@ -52,7 +52,7 @@ impl<'a> Sleigh<'a> {
     };
   }
 
-  pub fn check_keys(&mut self, keyboard_state: &sdl2::keyboard::KeyboardState) {
+  pub fn check_keyboard_state(&mut self, keyboard_state: &sdl2::keyboard::KeyboardState) {
     let drunk_factor = 1.0;
 
     if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left) {
