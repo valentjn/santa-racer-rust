@@ -17,6 +17,13 @@ pub struct Game<'a> {
   buffer_size: Point,
   event_pump: &'a mut sdl2::EventPump,
 
+  target_fps: f64,
+  quit_flag: bool,
+  fps: f64,
+  frame_counter: u32,
+  last_frame_instant: std::time::Instant,
+  last_fps_update_instant: std::time::Instant,
+
   asset_library: &'a assets::AssetLibrary<'a>,
   font: ui::Font<'a>,
 
@@ -25,13 +32,6 @@ pub struct Game<'a> {
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: fg_objects::Sleigh<'a>,
-
-  target_fps: f64,
-  quit_flag: bool,
-  fps: f64,
-  frame_counter: u32,
-  last_frame_instant: Option<std::time::Instant>,
-  last_fps_update_instant: Option<std::time::Instant>,
 }
 
 struct DrawArguments<'a> {
@@ -93,8 +93,15 @@ impl<'a> Game<'a> {
       canvas: canvas,
       buffer_texture: buffer_texture,
       buffer_size: buffer_size,
-
       event_pump: event_pump,
+
+      target_fps: TARGET_FPS,
+      quit_flag: false,
+      fps: 0.0,
+      frame_counter: 0,
+      last_frame_instant: std::time::Instant::now(),
+      last_fps_update_instant: std::time::Instant::now(),
+
       asset_library: asset_library,
       font: font,
 
@@ -104,13 +111,6 @@ impl<'a> Game<'a> {
       landscape: landscape,
       level: level,
       sleigh: sleigh,
-
-      target_fps: TARGET_FPS,
-      quit_flag: false,
-      fps: 0.0,
-      frame_counter: 0,
-      last_frame_instant: Option::None,
-      last_fps_update_instant: Option::None,
     };
   }
 
@@ -232,32 +232,23 @@ impl<'a> Game<'a> {
 
   fn finish_frame(&mut self) {
     let now = std::time::Instant::now();
+    let duration_since_last_fps_update = now.duration_since(self.last_fps_update_instant);
 
-    match self.last_fps_update_instant {
-      Some(last_fps_update_instant)
-            if now >= last_fps_update_instant + std::time::Duration::from_secs(1) => {
-        self.fps = (self.frame_counter as f64) /
-            now.duration_since(last_fps_update_instant).as_secs_f64();
-        if self.options.verbose_enabled { println!("FPS: {:.1}", self.fps); }
-        self.last_fps_update_instant.replace(now);
-        self.frame_counter = 0;
-      },
-      None => {
-        self.last_fps_update_instant.replace(now);
-      },
-      _ => {},
-    };
-
-    if let Some(last_frame_instant) = self.last_frame_instant {
-      let frame_duration = now - last_frame_instant;
-      let target_frame_duration = std::time::Duration::from_secs_f64(1.0 / self.target_fps);
-
-      if frame_duration < target_frame_duration {
-        std::thread::sleep(target_frame_duration - frame_duration);
-      }
+    if duration_since_last_fps_update >= std::time::Duration::from_secs(1) {
+      self.fps = (self.frame_counter as f64) / duration_since_last_fps_update.as_secs_f64();
+      if self.options.verbose_enabled { println!("FPS: {:.1}", self.fps); }
+      self.last_fps_update_instant = now;
+      self.frame_counter = 0;
     }
 
-    self.last_frame_instant.replace(std::time::Instant::now());
+    let frame_duration = now - self.last_frame_instant;
+    let target_frame_duration = std::time::Duration::from_secs_f64(1.0 / self.target_fps);
+
+    if frame_duration < target_frame_duration {
+      std::thread::sleep(target_frame_duration - frame_duration);
+    }
+
+    self.last_frame_instant = std::time::Instant::now();
     self.frame_counter += 1;
   }
 }
