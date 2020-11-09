@@ -27,8 +27,11 @@ pub struct Sleigh<'a> {
 }
 
 impl<'a> Sleigh<'a> {
-  pub fn new(canvas_size: Point, sleigh_image: assets::Image<'a>,
-        reindeer_image: assets::Image<'a>) -> Sleigh<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point,
+        texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>) ->
+        Sleigh<'a> {
+    let sleigh_image = asset_library.get_image("sleigh").clone(texture_creator);
+    let reindeer_image = asset_library.get_image("reindeer").clone(texture_creator);
     let reindeer_offset = Point::new(10.0, 3.0);
     let size = Point::new(sleigh_image.height() + reindeer_image.height() +
         reindeer_offset.x, sleigh_image.height());

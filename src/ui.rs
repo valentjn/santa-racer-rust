@@ -6,6 +6,7 @@
  */
 
 use crate::*;
+use crate::assets::CloneAsI32Vector;
 use crate::assets::Point;
 
 pub struct Font<'a> {
@@ -29,14 +30,14 @@ pub enum Alignment {
 }
 
 impl<'a> Font<'a> {
-  pub fn new<S: Into<String>>(image: &'a assets::Image<'a>, characters: S,
-        character_widths: Vec<i32>) -> Font<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Font<'a> {
+    let character_widths = asset_library.get_data("fontCharacterWidths").clone_as_i32();
     let max_character_width: i32 = *character_widths.iter().max().expect(
       "No elements in character_widths");
 
     return Font{
-      image: image,
-      characters: characters.into(),
+      image: asset_library.get_image("font"),
+      characters: "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ".to_string(),
       character_widths: character_widths,
       max_character_width: max_character_width,
     };

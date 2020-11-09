@@ -6,7 +6,6 @@
  */
 
 use crate::*;
-use crate::assets::CloneAsI32Vector;
 use crate::assets::Point;
 
 pub struct Game<'a> {
@@ -25,10 +24,10 @@ pub struct Game<'a> {
   last_fps_update_instant: std::time::Instant,
 
   asset_library: &'a assets::AssetLibrary<'a>,
-  font: ui::Font<'a>,
 
   mode: Mode,
 
+  font: ui::Font<'a>,
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: fg_objects::Sleigh<'a>,
@@ -73,19 +72,10 @@ impl<'a> Game<'a> {
 
     asset_library.get_song("music").play();
 
-    let font = ui::Font::new(asset_library.get_image("font"),
-        "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ",
-        asset_library.get_data("fontCharacterWidths").clone_as_i32());
-
-    let landscape = level::Landscape::new(asset_library.get_image("landscape"));
-
-    let level = level::Level::new(buffer_size, asset_library.get_image("level"),
-        asset_library.get_data("backgroundObjectMap").to_vec(),
-        asset_library.get_data("foregroundObjectMap").to_vec());
-
-    let sleigh = fg_objects::Sleigh::new(buffer_size,
-        asset_library.get_image("sleigh").clone(texture_creator),
-        asset_library.get_image("reindeer").clone(texture_creator));
+    let font = ui::Font::new(asset_library);
+    let landscape = level::Landscape::new(asset_library);
+    let level = level::Level::new(asset_library, buffer_size);
+    let sleigh = fg_objects::Sleigh::new(asset_library, buffer_size, texture_creator);
 
     return Game{
       options: options,
@@ -103,11 +93,11 @@ impl<'a> Game<'a> {
       last_fps_update_instant: std::time::Instant::now(),
 
       asset_library: asset_library,
-      font: font,
 
       // TODO
       mode: Mode::Running,
 
+      font: font,
       landscape: landscape,
       level: level,
       sleigh: sleigh,

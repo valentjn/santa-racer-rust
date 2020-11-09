@@ -36,15 +36,16 @@ const MIN_SCROLL_SPEED_X: f64 = 40.0;
 const MAX_SCROLL_SPEED_X: f64 = 160.0;
 
 impl<'a> Level<'a> {
-  pub fn new(canvas_size: Point,
-        image: &'a assets::Image<'a>, background_object_map_data: Vec<f64>,
-        foreground_object_map_data: Vec<f64>) -> Level {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Level {
+    let image = asset_library.get_image("level");
     let tile_size = image.size();
 
     return Level{
       image: image,
-      background_object_map: Level::convert_data_to_map(background_object_map_data),
-      foreground_object_map: Level::convert_data_to_map(foreground_object_map_data),
+      background_object_map: Level::convert_data_to_map(
+        asset_library.get_data("backgroundObjectMap").to_vec()),
+      foreground_object_map: Level::convert_data_to_map(
+        asset_library.get_data("foregroundObjectMap").to_vec()),
 
       offset_x: 0.0,
       scroll_speed_x: 0.0,
@@ -108,7 +109,9 @@ impl<'a> Level<'a> {
 }
 
 impl<'a> Landscape<'a> {
-  pub fn new(image: &'a assets::Image<'a>) -> Landscape {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Landscape {
+    let image = asset_library.get_image("landscape");
+
     return Landscape{
       image: image,
       offset_x: 0.0,
