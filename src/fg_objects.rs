@@ -11,9 +11,9 @@ use crate::*;
 use crate::assets::Point;
 
 pub struct Sleigh<'a> {
-  canvas_size: assets::Point,
   sleigh_image: assets::Image<'a>,
   reindeer_image: assets::Image<'a>,
+  canvas_size: assets::Point,
 
   pub size: Point,
   pub position: Point,
@@ -51,9 +51,9 @@ impl<'a> Sleigh<'a> {
         reindeer_offset.x, sleigh_image.height());
 
     return Sleigh{
-      canvas_size: canvas_size,
       sleigh_image: sleigh_image,
       reindeer_image: reindeer_image,
+      canvas_size: canvas_size,
 
       size: size,
       position: Point::zero(),

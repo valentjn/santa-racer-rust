@@ -12,12 +12,12 @@ pub struct Level<'a> {
   image: &'a assets::Image<'a>,
   background_object_map: Vec<Vec<f64>>,
   foreground_object_map: Vec<Vec<f64>>,
+  canvas_size: Point,
 
   pub offset_x: f64,
   pub scroll_speed_x: f64,
   last_update_instant: std::time::Instant,
 
-  canvas_size: Point,
   tile_size: Point,
   number_of_visible_map_columns: usize,
   min_scroll_speed_x: f64,
@@ -46,12 +46,12 @@ impl<'a> Level<'a> {
         asset_library.get_data("backgroundObjectMap").to_vec()),
       foreground_object_map: Level::convert_data_to_map(
         asset_library.get_data("foregroundObjectMap").to_vec()),
+      canvas_size: canvas_size,
 
       offset_x: 0.0,
       scroll_speed_x: 0.0,
       number_of_visible_map_columns: (canvas_size.x / tile_size.x + 1.0) as usize,
 
-      canvas_size: canvas_size,
       tile_size: tile_size,
       last_update_instant: std::time::Instant::now(),
       min_scroll_speed_x: MIN_SCROLL_SPEED_X,
