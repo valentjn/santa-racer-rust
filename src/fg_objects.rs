@@ -30,14 +30,26 @@ pub struct Sleigh<'a> {
 
 pub struct Gift<'a> {
   image: &'a assets::Image<'a>,
+  canvas_size: assets::Point,
 
-  position: Point,
+  pub mode: GiftMode,
+
+  pub position: Point,
   velocity: Point,
   acceleration: Point,
   frame: f64,
   last_update_instant: std::time::Instant,
 
   frame_speed: f64,
+}
+
+#[derive(PartialEq)]
+pub enum GiftMode {
+  Falling,
+  CollidedWithChimney,
+  CollidedWithGround,
+  ShowingPoints,
+  CanBeDeleted,
 }
 
 impl<'a> Sleigh<'a> {
@@ -131,13 +143,16 @@ impl<'a> Sleigh<'a> {
 
 impl<'a, 'b> Gift<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>, level: &'b level::Level<'a>,
-        sleigh: &'b Sleigh<'a>) -> Gift<'a> {
+        sleigh: &'b Sleigh<'a>, canvas_size: Point) -> Gift<'a> {
     let number_of_gift_types = 4;
     let image = asset_library.get_image(format!("gift{}",
         rand::thread_rng().gen_range(1, number_of_gift_types)));
 
     return Gift{
       image: image,
+      canvas_size: canvas_size,
+
+      mode: GiftMode::Falling,
 
       position: Point::new(sleigh.position.x + level.offset_x, sleigh.position.y + sleigh.size.y),
       velocity: Point::new(level.scroll_speed_x, 50.0),
@@ -153,18 +168,37 @@ impl<'a, 'b> Gift<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
-    self.position.x += seconds_since_last_update * self.velocity.x;
-    self.position.y += seconds_since_last_update * self.velocity.y;
-    self.velocity.x += seconds_since_last_update * self.acceleration.x;
-    self.velocity.y += seconds_since_last_update * self.acceleration.y;
-    self.frame += seconds_since_last_update * self.frame_speed;
+    if self.mode == GiftMode::Falling {
+      self.position.x += seconds_since_last_update * self.velocity.x;
+      self.position.y += seconds_since_last_update * self.velocity.y;
+      self.velocity.x += seconds_since_last_update * self.acceleration.x;
+      self.velocity.y += seconds_since_last_update * self.acceleration.y;
+      self.frame += seconds_since_last_update * self.frame_speed;
+
+      if self.has_collided_with_chimney() {
+        self.mode = GiftMode::CollidedWithChimney;
+      } else if self.has_collided_with_ground() {
+        self.mode = GiftMode::CollidedWithGround;
+      }
+    }
 
     self.last_update_instant = now;
   }
 
+  fn has_collided_with_chimney(&self) -> bool {
+    // TODO
+    return false;
+  }
+
+  fn has_collided_with_ground(&self) -> bool {
+    return self.position.y >= self.canvas_size.y;
+  }
+
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &'b level::Level<'a>) {
-    self.image.draw(canvas, Point::new(self.position.x - level.offset_x, self.position.y),
-        self.frame);
+    if self.mode == GiftMode::Falling {
+      self.image.draw(canvas, Point::new(self.position.x - level.offset_x, self.position.y),
+          self.frame);
+    }
   }
 }

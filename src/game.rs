@@ -155,7 +155,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
                 "Could not change fullscreen state");
           } else if (keycode == sdl2::keyboard::Keycode::Space)
                 && (now.duration_since(self.last_gift_instant) >= NEW_GIFT_WAIT_DURATION) {
-            self.gifts.push(fg_objects::Gift::new(self.asset_library, &self.level, &self.sleigh));
+            self.gifts.push(fg_objects::Gift::new(
+                self.asset_library, &self.level, &self.sleigh, self.buffer_size));
             self.last_gift_instant = now;
           }
         },
@@ -181,9 +182,36 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     self.level.do_logic(&self.sleigh);
     self.sleigh.do_logic();
 
-    for gift in self.gifts.iter_mut() {
-      gift.do_logic();
+    let mut i = 0;
+
+    while i < self.gifts.len() {
+      self.gifts[i].do_logic();
+
+      if self.gifts[i].mode == fg_objects::GiftMode::CollidedWithChimney {
+        self.play_sound_with_level_position("giftCollidedWithChimney", self.gifts[i].position.x);
+        self.gifts[i].mode = fg_objects::GiftMode::ShowingPoints;
+      } else if self.gifts[i].mode == fg_objects::GiftMode::CollidedWithGround {
+        self.play_sound_with_level_position("giftCollidedWithGround", self.gifts[i].position.x);
+        self.gifts[i].mode = fg_objects::GiftMode::CanBeDeleted;
+      }
+
+      if self.gifts[i].mode == fg_objects::GiftMode::CanBeDeleted {
+        self.gifts.remove(i);
+      } else {
+        i += 1;
+      }
     }
+  }
+
+  fn play_sound_with_position<S: Into<String>>(&self, sound_name: S, position_x: f64) {
+    if self.options.sound_enabled {
+      self.asset_library.get_sound(sound_name).play_with_pan(
+          position_x / self.buffer_size.x);
+    }
+  }
+
+  fn play_sound_with_level_position<S: Into<String>>(&self, sound_name: S, position_x: f64) {
+    self.play_sound_with_position(sound_name, position_x - self.level.offset_x);
   }
 
   fn draw(&mut self) {
