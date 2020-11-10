@@ -9,6 +9,23 @@ use crate::*;
 use crate::assets::CloneAsI32Vector;
 use crate::assets::Point;
 
+pub struct Score<'a> {
+  gift_image: &'a assets::Image<'a>,
+  damage_image: &'a assets::Image<'a>,
+  time_image: &'a assets::Image<'a>,
+
+  gift_points: i64,
+  damage_points: i64,
+  remaining_duration: std::time::Duration,
+  last_update_instant: std::time::Instant,
+
+  gift_position_x: f64,
+  damage_position_x: f64,
+  time_position_x: f64,
+  margin_x: f64,
+  position_y: f64,
+}
+
 pub struct Font<'a> {
   image: &'a assets::Image<'a>,
   characters: String,
@@ -27,6 +44,62 @@ pub enum Alignment {
   BottomLeft = 6,
   BottomCenter = 7,
   BottomRight = 8,
+}
+
+impl<'a> Score<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Score<'a> {
+    let gift_image = asset_library.get_image("giftScoreIcon");
+
+    return Score{
+      gift_image: gift_image,
+      damage_image: asset_library.get_image("damageScoreIcon"),
+      time_image: asset_library.get_image("timeScoreIcon"),
+
+      gift_points: 0,
+      damage_points: 0,
+      remaining_duration: std::time::Duration::from_secs(0),
+      last_update_instant: std::time::Instant::now(),
+
+      gift_position_x: 0.0,
+      damage_position_x: 150.0,
+      time_position_x: 520.0,
+      margin_x: 40.0,
+      position_y: gift_image.height() / 2.0,
+    };
+  }
+
+  pub fn reset(&mut self) {
+    self.gift_points = 0;
+    self.damage_points = 0;
+    self.remaining_duration = std::time::Duration::from_secs(450);
+    self.last_update_instant = std::time::Instant::now();
+  }
+
+  pub fn do_logic(&mut self) {
+    let now = std::time::Instant::now();
+    self.remaining_duration -= now - self.last_update_instant;
+    let zero_duration = std::time::Duration::from_secs(0);
+    if self.remaining_duration < zero_duration { self.remaining_duration = zero_duration; }
+    self.last_update_instant = now;
+  }
+
+  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &'a Font<'a>) {
+    self.gift_image.draw(canvas, Point::new(self.gift_position_x, 0.0), 0.0);
+    font.draw_monospace(canvas, Point::new(self.gift_position_x + self.margin_x, self.position_y),
+        format!("{}", self.gift_points), Alignment::CenterLeft);
+
+    self.damage_image.draw(canvas, Point::new(self.damage_position_x, 0.0), 0.0);
+    font.draw_monospace(canvas, Point::new(self.damage_position_x + self.margin_x, self.position_y),
+        format!("{}", -self.damage_points), Alignment::CenterLeft);
+
+    let seconds = self.remaining_duration.as_secs_f64();
+    let minutes = (seconds / 60.0).floor() as i32;
+    let seconds = (seconds % 60.0) as i32;
+    self.time_image.draw(canvas, Point::new(self.time_position_x, 0.0), 0.0);
+    font.draw_monospace(canvas, Point::new(self.time_position_x + self.margin_x, self.position_y),
+        format!("{}:{:02}", minutes, seconds), Alignment::CenterLeft);
+  }
 }
 
 impl<'a> Font<'a> {

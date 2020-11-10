@@ -28,6 +28,7 @@ pub struct Game<'a: 'b, 'b> {
   mode: Mode,
 
   font: ui::Font<'a>,
+  score: ui::Score<'a>,
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: fg_objects::Sleigh<'a>,
@@ -41,6 +42,7 @@ struct DrawArguments<'a: 'b, 'b> {
   asset_library: &'a assets::AssetLibrary<'a>,
   font: &'a ui::Font<'a>,
   mode: &'a Mode,
+  score: &'a ui::Score<'a>,
   landscape: &'a level::Landscape<'a>,
   level: &'a level::Level<'a>,
   sleigh: &'a fg_objects::Sleigh<'a>,
@@ -80,6 +82,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     }
 
     let font = ui::Font::new(asset_library);
+    let score = ui::Score::new(asset_library);
     let landscape = level::Landscape::new(asset_library);
     let level = level::Level::new(asset_library, buffer_size);
     let sleigh = fg_objects::Sleigh::new(asset_library, buffer_size, texture_creator);
@@ -105,6 +108,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       mode: Mode::Running,
 
       font: font,
+      score: score,
       landscape: landscape,
       level: level,
       sleigh: sleigh,
@@ -115,6 +119,9 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
   }
 
   pub fn run_loop(&mut self) {
+    // TODO
+    self.score.reset();
+
     while !self.quit_flag {
       self.process_events();
       self.check_keyboard_state();
@@ -169,6 +176,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
   }
 
   fn do_logic(&mut self) {
+    self.score.do_logic();
     self.landscape.do_logic(&self.level);
     self.level.do_logic(&self.sleigh);
     self.sleigh.do_logic();
@@ -184,6 +192,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       asset_library: &self.asset_library,
       font: &self.font,
       mode: &self.mode,
+      score: &self.score,
       landscape: &self.landscape,
       level: &self.level,
       sleigh: &self.sleigh,
@@ -236,11 +245,12 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
         for gift in draw_arguments.gifts.iter() {
           gift.draw(canvas, draw_arguments.level);
         }
+
+        draw_arguments.score.draw(canvas, draw_arguments.font);
       },
       _ => {},
     }
 
-    draw_arguments.font.draw(canvas, Point::zero(), "Hello World", ui::Alignment::TopLeft);
     draw_arguments.font.draw(canvas, draw_arguments.buffer_size,
         format!("{:.0} FPS", draw_arguments.fps), ui::Alignment::BottomRight);
   }
