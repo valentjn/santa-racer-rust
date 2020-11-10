@@ -403,11 +403,20 @@ impl Sound {
     let left: u8 = (2.0 * (1.0 - pan) * 255.0).max(0.0).min(255.0) as u8;
     let right: u8 = (2.0 * pan * 255.0).max(0.0).min(255.0) as u8;
 
-    let channel = sdl2::mixer::Channel::all();
+    let channel = Sound::get_free_channel().expect("Could not find free channel");
     channel.set_volume((128.0 * volume) as i32);
     channel.set_panning(left, right).expect(
         format!("Could not set panning with left = {} and right = {}", left, right).as_str());
     channel.play(&self.chunk, 0).expect("Could not play sound");
+  }
+
+  fn get_free_channel() -> Option<sdl2::mixer::Channel> {
+    for i in 0 .. 256 {
+      let channel = sdl2::mixer::Channel(i);
+      if !channel.is_playing() { return Some(channel); }
+    }
+
+    return None;
   }
 }
 
