@@ -102,7 +102,7 @@ impl<'a> Level<'a> {
         if row[x] < 0.0 { continue; }
         let dst_point = Point::new((x as f64) * self.tile_size.x - self.offset_x,
             (y as f64) * self.tile_size.y);
-        self.image.draw(canvas, &dst_point, row[x]);
+        self.image.draw(canvas, dst_point, row[x]);
       }
     }
   }
@@ -133,11 +133,11 @@ impl<'a> Landscape<'a> {
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
-    self.image.draw_blit(canvas, &sdl2::rect::Rect::new(self.offset_x as i32, 0,
+    self.image.draw_blit(canvas, sdl2::rect::Rect::new(self.offset_x as i32, 0,
         (self.size.x - self.offset_x) as u32, self.size.y as u32),
-        &Point::zero(), 0.0);
-    self.image.draw_blit(canvas, &sdl2::rect::Rect::new(0, 0,
+        Point::zero(), 0.0);
+    self.image.draw_blit(canvas, sdl2::rect::Rect::new(0, 0,
         self.offset_x as u32, self.size.y as u32),
-        &Point::new(self.size.x - self.offset_x, 0.0), 0.0);
+        Point::new(self.size.x - self.offset_x, 0.0), 0.0);
   }
 }

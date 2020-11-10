@@ -120,12 +120,12 @@ impl<'a> Sleigh<'a> {
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
     let mut position = self.position;
-    self.sleigh_image.draw(canvas, &position, self.sleigh_frame);
+    self.sleigh_image.draw(canvas, position, self.sleigh_frame);
     position.x += self.sleigh_image.width() + self.reindeer_offset.x;
     position.y += self.reindeer_offset.y;
-    self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
+    self.reindeer_image.draw(canvas, position, self.reindeer_frame);
     position.x -= self.reindeer_offset.x;
-    self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
+    self.reindeer_image.draw(canvas, position, self.reindeer_frame);
   }
 }
 
@@ -164,7 +164,7 @@ impl<'a, 'b> Gift<'a> {
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &'b level::Level<'a>) {
-    self.image.draw(canvas, &Point::new(self.position.x - level.offset_x, self.position.y),
+    self.image.draw(canvas, Point::new(self.position.x - level.offset_x, self.position.y),
         self.frame);
   }
 }

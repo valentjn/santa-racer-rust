@@ -221,7 +221,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       _ => "background",
     };
 
-    draw_arguments.asset_library.get_image(background_image_name).draw(canvas, &Point::zero(), 0.0);
+    draw_arguments.asset_library.get_image(background_image_name).draw(canvas, Point::zero(), 0.0);
 
     match draw_arguments.mode {
       Mode::NewHighscore => {
@@ -238,8 +238,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       _ => {},
     }
 
-    draw_arguments.font.draw(canvas, &Point::zero(), "Hello World", ui::Alignment::TopLeft);
-    draw_arguments.font.draw(canvas, &draw_arguments.buffer_size,
+    draw_arguments.font.draw(canvas, Point::zero(), "Hello World", ui::Alignment::TopLeft);
+    draw_arguments.font.draw(canvas, draw_arguments.buffer_size,
         format!("{:.0} FPS", draw_arguments.fps), ui::Alignment::BottomRight);
   }
 

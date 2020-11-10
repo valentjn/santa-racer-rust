@@ -259,14 +259,14 @@ impl<'a> Image<'a> {
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(&self,
-        canvas: &mut sdl2::render::Canvas<RenderTarget>, dst_point: &Point, frame: f64) {
-    self.draw_blit(canvas, &sdl2::rect::Rect::new(0, 0, self.width() as u32, self.height() as u32),
+        canvas: &mut sdl2::render::Canvas<RenderTarget>, dst_point: Point, frame: f64) {
+    self.draw_blit(canvas, sdl2::rect::Rect::new(0, 0, self.width() as u32, self.height() as u32),
         dst_point, frame);
   }
 
   pub fn draw_blit<RenderTarget: sdl2::render::RenderTarget>(&self,
         canvas: &mut sdl2::render::Canvas<RenderTarget>,
-        src_rect: &sdl2::rect::Rect, dst_point: &Point, frame: f64) {
+        src_rect: sdl2::rect::Rect, dst_point: Point, frame: f64) {
     let frame = frame as i32;
     let src_rect = sdl2::rect::Rect::new(
         src_rect.x() + (frame % self.number_of_frames.0) * (self.width() as i32),
@@ -279,7 +279,7 @@ impl<'a> Image<'a> {
     canvas.copy(&self.texture, src_rect, dst_rect).expect("Could not copy texture");
   }
 
-  pub fn collides(&self, point: &Point, frame: i32, other: &Image, other_point: &Point,
+  pub fn collides(&self, point: Point, frame: i32, other: Image, other_point: Point,
         other_frame: i32) -> bool {
     let (width, height) = (self.width(), self.height());
     let (other_width, other_height) = (other.width(), other.height());

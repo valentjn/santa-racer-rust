@@ -45,19 +45,19 @@ impl<'a> Font<'a> {
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget, S: Into<String>>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>,
-        dst_point: &Point, text: S, alignment: Alignment) {
+        dst_point: Point, text: S, alignment: Alignment) {
     self.draw_internal(canvas, dst_point, text, alignment, false);
   }
 
   pub fn draw_monospace<RenderTarget: sdl2::render::RenderTarget, S: Into<String>>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>,
-        dst_point: &Point, text: S, alignment: Alignment) {
+        dst_point: Point, text: S, alignment: Alignment) {
     self.draw_internal(canvas, dst_point, text, alignment, true);
   }
 
   fn draw_internal<RenderTarget: sdl2::render::RenderTarget, S: Into<String>>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>,
-        dst_point: &Point, text: S, alignment: Alignment, monospace: bool) {
+        dst_point: Point, text: S, alignment: Alignment, monospace: bool) {
     let text: String = text.into();
     let frames: Vec<i32> = text.chars().map(
         |x| self.characters.chars().position(|y| y == x).unwrap_or_else(
@@ -86,7 +86,7 @@ impl<'a> Font<'a> {
       }
 
       if character != ' ' {
-        self.image.draw(canvas, &dst_point, *frame as f64);
+        self.image.draw(canvas, dst_point, *frame as f64);
       }
 
       dst_point.x += match monospace {
