@@ -75,7 +75,9 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let buffer_texture = texture_creator.create_texture_target(
         None, BUFFER_WIDTH as u32, BUFFER_HEIGHT as u32).expect("Could not create buffer texture");
 
-    asset_library.get_song("music").play();
+    if options.sound_enabled {
+      asset_library.get_song("music").play();
+    }
 
     let font = ui::Font::new(asset_library);
     let landscape = level::Landscape::new(asset_library);
