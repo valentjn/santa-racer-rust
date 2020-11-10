@@ -5,6 +5,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use rand::Rng;
+
 use crate::*;
 use crate::assets::Point;
 
@@ -23,6 +25,18 @@ pub struct Sleigh<'a> {
 
   max_velocity: Point,
   reindeer_offset: Point,
+  frame_speed: f64,
+}
+
+pub struct Gift<'a> {
+  image: &'a assets::Image<'a>,
+
+  position: Point,
+  velocity: Point,
+  acceleration: Point,
+  frame: f64,
+  last_update_instant: std::time::Instant,
+
   frame_speed: f64,
 }
 
@@ -112,5 +126,45 @@ impl<'a> Sleigh<'a> {
     self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
     position.x -= self.reindeer_offset.x;
     self.reindeer_image.draw(canvas, &position, self.reindeer_frame);
+  }
+}
+
+impl<'a, 'b> Gift<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, level: &'b level::Level<'a>,
+        sleigh: &'b Sleigh<'a>) -> Gift<'a> {
+    let number_of_gift_types = 4;
+    let image = asset_library.get_image(format!("gift{}",
+        rand::thread_rng().gen_range(1, number_of_gift_types)));
+
+    return Gift{
+      image: image,
+
+      position: Point::new(sleigh.position.x + level.offset_x, sleigh.position.y + sleigh.size.y),
+      velocity: Point::new(level.scroll_speed_x, 50.0),
+      acceleration: Point::new(0.0, 200.0),
+      frame: rand::thread_rng().gen_range(0, image.total_number_of_frames()) as f64,
+      last_update_instant: std::time::Instant::now(),
+
+      frame_speed: 15.0,
+    };
+  }
+
+  pub fn do_logic(&mut self) {
+    let now = std::time::Instant::now();
+    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+
+    self.position.x += seconds_since_last_update * self.velocity.x;
+    self.position.y += seconds_since_last_update * self.velocity.y;
+    self.velocity.x += seconds_since_last_update * self.acceleration.x;
+    self.velocity.y += seconds_since_last_update * self.acceleration.y;
+    self.frame += seconds_since_last_update * self.frame_speed;
+
+    self.last_update_instant = now;
+  }
+
+  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &'b level::Level<'a>) {
+    self.image.draw(canvas, &Point::new(self.position.x - level.offset_x, self.position.y),
+        self.frame);
   }
 }

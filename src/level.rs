@@ -13,8 +13,8 @@ pub struct Level<'a> {
   background_object_map: Vec<Vec<f64>>,
   foreground_object_map: Vec<Vec<f64>>,
 
-  offset_x: f64,
-  scroll_speed_x: f64,
+  pub offset_x: f64,
+  pub scroll_speed_x: f64,
   last_update_instant: std::time::Instant,
 
   canvas_size: Point,

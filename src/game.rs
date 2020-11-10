@@ -8,7 +8,7 @@
 use crate::*;
 use crate::assets::Point;
 
-pub struct Game<'a> {
+pub struct Game<'a: 'b, 'b> {
   options: &'a options::Options,
 
   canvas: &'a mut sdl2::render::WindowCanvas,
@@ -31,9 +31,12 @@ pub struct Game<'a> {
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: fg_objects::Sleigh<'a>,
+  gifts: Vec<fg_objects::Gift<'b>>,
+
+  last_gift_instant: std::time::Instant,
 }
 
-struct DrawArguments<'a> {
+struct DrawArguments<'a: 'b, 'b> {
   buffer_size: Point,
   asset_library: &'a assets::AssetLibrary<'a>,
   font: &'a ui::Font<'a>,
@@ -41,6 +44,7 @@ struct DrawArguments<'a> {
   landscape: &'a level::Landscape<'a>,
   level: &'a level::Level<'a>,
   sleigh: &'a fg_objects::Sleigh<'a>,
+  gifts: &'b Vec<fg_objects::Gift<'b>>,
   fps: f64,
 }
 
@@ -59,12 +63,13 @@ enum Mode {
 const BUFFER_WIDTH: f64 = 640.0;
 const BUFFER_HEIGHT: f64 = 480.0;
 const TARGET_FPS: f64 = 30.0;
+const NEW_GIFT_WAIT_DURATION: std::time::Duration = std::time::Duration::from_millis(250);
 
-impl<'a> Game<'a> {
+impl<'a: 'b, 'b> Game<'a, 'b> {
   pub fn new(canvas: &'a mut sdl2::render::WindowCanvas,
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         event_pump: &'a mut sdl2::EventPump,
-        asset_library: &'a assets::AssetLibrary, options: &'a options::Options) -> Game<'a> {
+        asset_library: &'a assets::AssetLibrary, options: &'a options::Options) -> Game<'a, 'b> {
     let buffer_size = Point::from_u32_tuple(
         canvas.output_size().expect("Could not get output size of canvas"));
     let buffer_texture = texture_creator.create_texture_target(
@@ -101,6 +106,9 @@ impl<'a> Game<'a> {
       landscape: landscape,
       level: level,
       sleigh: sleigh,
+      gifts: Vec::new(),
+
+      last_gift_instant: std::time::Instant::now(),
     };
   }
 
@@ -116,6 +124,8 @@ impl<'a> Game<'a> {
 
   fn process_events(&mut self) {
     for event in self.event_pump.poll_iter() {
+      let now = std::time::Instant::now();
+
       match event {
         sdl2::event::Event::Quit{..} => self.quit_flag = true,
         sdl2::event::Event::KeyDown{keycode, keymod, ..} => {
@@ -134,6 +144,10 @@ impl<'a> Game<'a> {
             };
             self.canvas.window_mut().set_fullscreen(fullscreen_state).expect(
                 "Could not change fullscreen state");
+          } else if (keycode == sdl2::keyboard::Keycode::Space)
+                && (now.duration_since(self.last_gift_instant) >= NEW_GIFT_WAIT_DURATION) {
+            self.gifts.push(fg_objects::Gift::new(self.asset_library, &self.level, &self.sleigh));
+            self.last_gift_instant = now;
           }
         },
         _ => {},
@@ -156,6 +170,10 @@ impl<'a> Game<'a> {
     self.landscape.do_logic(&self.level);
     self.level.do_logic(&self.sleigh);
     self.sleigh.do_logic();
+
+    for gift in self.gifts.iter_mut() {
+      gift.do_logic();
+    }
   }
 
   fn draw(&mut self) {
@@ -167,6 +185,7 @@ impl<'a> Game<'a> {
       landscape: &self.landscape,
       level: &self.level,
       sleigh: &self.sleigh,
+      gifts: &self.gifts,
       fps: self.fps,
     };
 
@@ -211,6 +230,10 @@ impl<'a> Game<'a> {
         draw_arguments.landscape.draw(canvas);
         draw_arguments.level.draw_background(canvas);
         draw_arguments.sleigh.draw(canvas);
+
+        for gift in draw_arguments.gifts.iter() {
+          gift.draw(canvas, draw_arguments.level);
+        }
       },
       _ => {},
     }
