@@ -15,13 +15,13 @@ pub struct Sleigh<'a> {
 
   pub size: Point,
   pub position: Point,
-  speed: Point,
+  velocity: Point,
   acceleration: Point,
   sleigh_frame: f64,
   reindeer_frame: f64,
   last_update_instant: std::time::Instant,
 
-  max_speed: Point,
+  max_velocity: Point,
   reindeer_offset: Point,
   frame_speed: f64,
 }
@@ -43,13 +43,13 @@ impl<'a> Sleigh<'a> {
 
       size: size,
       position: Point::zero(),
-      speed: Point::zero(),
+      velocity: Point::zero(),
       acceleration: Point::new(25.0, 25.0),
       sleigh_frame: 0.0,
       reindeer_frame: 0.0,
       last_update_instant: std::time::Instant::now(),
 
-      max_speed: Point::new(200.0, 200.0),
+      max_velocity: Point::new(200.0, 200.0),
       reindeer_offset: reindeer_offset,
       frame_speed: 13.0,
     };
@@ -59,30 +59,30 @@ impl<'a> Sleigh<'a> {
     let drunk_factor = 1.0;
 
     if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left) {
-      self.update_speed_x(-drunk_factor);
+      self.update_velocity_x(-drunk_factor);
     } else if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Right) {
-      self.update_speed_x(drunk_factor);
+      self.update_velocity_x(drunk_factor);
     } else {
-      self.update_speed_x(0.0);
+      self.update_velocity_x(0.0);
     }
 
     if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Up) {
-      self.update_speed_y(-drunk_factor);
+      self.update_velocity_y(-drunk_factor);
     } else if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Down) {
-      self.update_speed_y(drunk_factor);
+      self.update_velocity_y(drunk_factor);
     } else {
-      self.update_speed_y(0.0);
+      self.update_velocity_y(0.0);
     }
   }
 
-  fn update_speed_x(&mut self, sign: f64) {
-    self.speed.x = (self.speed.x + sign * self.acceleration.x)
-        .max(-self.max_speed.x).min(self.max_speed.x);
+  fn update_velocity_x(&mut self, sign: f64) {
+    self.velocity.x = (self.velocity.x + sign * self.acceleration.x)
+        .max(-self.max_velocity.x).min(self.max_velocity.x);
   }
 
-  fn update_speed_y(&mut self, sign: f64) {
-    self.speed.y = (self.speed.y + sign * self.acceleration.y)
-        .max(-self.max_speed.y).min(self.max_speed.y);
+  fn update_velocity_y(&mut self, sign: f64) {
+    self.velocity.y = (self.velocity.y + sign * self.acceleration.y)
+        .max(-self.max_velocity.y).min(self.max_velocity.y);
   }
 
   pub fn do_logic(&mut self) {
@@ -90,10 +90,10 @@ impl<'a> Sleigh<'a> {
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
     self.position.x = (self.position.x
-        + (seconds_since_last_update * (self.speed.x as f64)) as f64)
+        + (seconds_since_last_update * (self.velocity.x as f64)) as f64)
         .max(0.0).min(self.canvas_size.x - self.size.x);
     self.position.y = (self.position.y
-        + (seconds_since_last_update * (self.speed.y as f64)) as f64)
+        + (seconds_since_last_update * (self.velocity.y as f64)) as f64)
         .max(0.0).min(self.canvas_size.y - self.size.y);
 
     self.sleigh_frame += seconds_since_last_update * self.frame_speed;
