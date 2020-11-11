@@ -42,7 +42,7 @@ fileNames = {
       "2_3026_0.bmp" : "angel.png",
       "2_3027_0.bmp" : "cloud.png",
       "2_3028_0.bmp" : "drunkStar.png",
-      #"2_3029_0.bmp" : "smallDrunkStar.png",
+      "2_3029_0.bmp" : "smallDrunkStar.png",
       #"2_3031_0.bmp" : "airshipAd.png",
       "2_3034_0.bmp" : "giftScoreIcon.png",
       "2_3035_0.bmp" : "damageScoreIcon.png",
@@ -240,6 +240,9 @@ def main():
               "-family", "Palatino", "-style", "Normal", "-pointsize", "14",
               "-fill", "white", "-gravity", "NorthWest",
               "-annotate", "-1x-1+51+8080", "Frohes Fest", dstFilePath])
+        elif dstFileName in ["bigStar.png", "drunkStar.png", "smallDrunkStar.png",
+              "smallStar.png", "star.png"]:
+          subprocess.run(["convert", dstFilePath, "-alpha", "copy", dstFilePath])
       elif dstExtension == ".wav":
         shutil.copyfile(srcFilePath, dstFilePath)
 
