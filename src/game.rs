@@ -218,11 +218,11 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       if let fg_objects::GiftMode::CollidedWithChimney(gift_points) = self.gifts[i].mode {
         self.play_sound_with_level_position("giftCollidedWithChimney", self.gifts[i].position.x);
         self.score.add_gift_points(gift_points);
-        self.gifts[i].mode = fg_objects::GiftMode::ShowingPoints;
+        self.gifts[i].show_points(gift_points);
       } else if let fg_objects::GiftMode::CollidedWithGround(damage_points) = self.gifts[i].mode {
         self.play_sound_with_level_position("giftCollidedWithGround", self.gifts[i].position.x);
         self.score.add_damage_points(damage_points);
-        self.gifts[i].mode = fg_objects::GiftMode::CanBeDeleted;
+        self.gifts[i].mark_as_can_be_deleted();
       }
 
       if self.gifts[i].mode == fg_objects::GiftMode::CanBeDeleted {

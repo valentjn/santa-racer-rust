@@ -36,6 +36,10 @@ pub struct Chimney {
 
 pub struct Gift<'a> {
   image: &'a assets::Image<'a>,
+  star_image: &'a assets::Image<'a>,
+  points10_image: &'a assets::Image<'a>,
+  points15_image: &'a assets::Image<'a>,
+  points20_image: &'a assets::Image<'a>,
   canvas_size: assets::Point,
 
   pub mode: GiftMode,
@@ -46,7 +50,15 @@ pub struct Gift<'a> {
   frame: f64,
   last_update_instant: std::time::Instant,
 
+  star1_offset: Point,
+  star2_offset: Point,
+  star3_offset: Point,
+  points_offset: Point,
+  star1_frame_offset: f64,
+  star2_frame_offset: f64,
+  star3_frame_offset: f64,
   frame_speed: f64,
+  showing_points_frame_speed: f64,
 }
 
 #[derive(PartialEq)]
@@ -54,7 +66,7 @@ pub enum GiftMode {
   Falling,
   CollidedWithChimney(f64),
   CollidedWithGround(f64),
-  ShowingPoints,
+  ShowingPoints(f64),
   CanBeDeleted,
 }
 
@@ -171,6 +183,10 @@ impl<'a, 'b> Gift<'a> {
 
     return Gift{
       image: image,
+      star_image: asset_library.get_image("bigStar"),
+      points10_image: asset_library.get_image("points10"),
+      points15_image: asset_library.get_image("points15"),
+      points20_image: asset_library.get_image("points20"),
       canvas_size: canvas_size,
 
       mode: GiftMode::Falling,
@@ -181,7 +197,15 @@ impl<'a, 'b> Gift<'a> {
       frame: rand::thread_rng().gen_range(0, image.total_number_of_frames()) as f64,
       last_update_instant: std::time::Instant::now(),
 
+      star1_offset: Point::new(10.0, 10.0),
+      star2_offset: Point::new(25.0, 15.0),
+      star3_offset: Point::new(15.0, 25.0),
+      points_offset: Point::new(10.0, 10.0),
+      star1_frame_offset: 0.0,
+      star2_frame_offset: 2.0,
+      star3_frame_offset: 4.0,
       frame_speed: 15.0,
+      showing_points_frame_speed: 15.0,
     };
   }
 
@@ -189,20 +213,26 @@ impl<'a, 'b> Gift<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
-    if self.mode == GiftMode::Falling {
-      self.position.x += seconds_since_last_update * self.velocity.x;
-      self.position.y += seconds_since_last_update * self.velocity.y;
-      self.velocity.x += seconds_since_last_update * self.acceleration.x;
-      self.velocity.y += seconds_since_last_update * self.acceleration.y;
-      self.frame += seconds_since_last_update * self.frame_speed;
+    match self.mode {
+      GiftMode::Falling => {
+        self.position.x += seconds_since_last_update * self.velocity.x;
+        self.position.y += seconds_since_last_update * self.velocity.y;
+        self.velocity.x += seconds_since_last_update * self.acceleration.x;
+        self.velocity.y += seconds_since_last_update * self.acceleration.y;
+        self.frame += seconds_since_last_update * self.frame_speed;
 
-      if let Some(chimney_tile_y) = self.has_collided_with_chimney(level, chimneys) {
-        let gift_points = if chimney_tile_y <= 1 { 10.0 }
-            else if chimney_tile_y == 2 { 15.0 } else { 20.0 };
-        self.mode = GiftMode::CollidedWithChimney(gift_points);
-      } else if self.has_collided_with_ground() {
-        self.mode = GiftMode::CollidedWithGround(15.0);
-      }
+        if let Some(chimney_tile_y) = self.has_collided_with_chimney(level, chimneys) {
+          let gift_points = if chimney_tile_y <= 1 { 10.0 }
+              else if chimney_tile_y == 2 { 15.0 } else { 20.0 };
+          self.mode = GiftMode::CollidedWithChimney(gift_points);
+        } else if self.has_collided_with_ground() {
+          self.mode = GiftMode::CollidedWithGround(15.0);
+        }
+      },
+      GiftMode::ShowingPoints(_) => {
+        self.frame += seconds_since_last_update * self.showing_points_frame_speed;
+      },
+      _ => {},
     }
 
     self.last_update_instant = now;
@@ -234,11 +264,67 @@ impl<'a, 'b> Gift<'a> {
     return self.position.y >= self.canvas_size.y;
   }
 
+  pub fn show_points(&mut self, gift_points: f64) {
+    self.mode = GiftMode::ShowingPoints(gift_points);
+    self.frame = 0.0;
+  }
+
+  pub fn mark_as_can_be_deleted(&mut self) {
+    self.mode = GiftMode::CanBeDeleted;
+  }
+
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &'b level::Level<'a>) {
-    if self.mode == GiftMode::Falling {
-      self.image.draw(canvas, Point::new(self.position.x - level.offset_x, self.position.y),
-          self.frame);
+    let position: Point = Point::new(self.position.x - level.offset_x, self.position.y);
+
+    match self.mode {
+      GiftMode::Falling => {
+        self.image.draw(canvas, position, self.frame);
+      },
+      GiftMode::ShowingPoints(gift_points) => {
+        let position: Point = Point::new(position.x - self.star_image.width() / 2.0,
+            position.y - self.star_image.height() / 2.0);
+        self.draw_star(position, canvas);
+        self.draw_points(position, gift_points, canvas);
+      },
+      _ => {},
     }
+  }
+
+  pub fn draw_star<RenderTarget: sdl2::render::RenderTarget>(
+        &self, position: Point, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+    let number_of_star_frames = self.star_image.total_number_of_frames() as f64;
+
+    if (self.frame >= self.star1_frame_offset)
+          && (self.frame < self.star1_frame_offset + number_of_star_frames) {
+      self.star_image.draw(canvas, Point::new(position.x + self.star1_offset.x,
+          position.y + self.star1_offset.y), self.frame - self.star1_frame_offset);
+    }
+
+    if (self.frame >= self.star2_frame_offset)
+          && (self.frame < self.star2_frame_offset + number_of_star_frames) {
+      self.star_image.draw(canvas, Point::new(position.x + self.star2_offset.x,
+          position.y + self.star2_offset.y), self.frame - self.star2_frame_offset);
+    }
+
+    if (self.frame >= self.star3_frame_offset)
+          && (self.frame < self.star3_frame_offset + number_of_star_frames) {
+      self.star_image.draw(canvas, Point::new(position.x + self.star3_offset.x,
+          position.y + self.star3_offset.y), self.frame - self.star3_frame_offset);
+    }
+  }
+
+  pub fn draw_points<RenderTarget: sdl2::render::RenderTarget>(&self, position: Point,
+        gift_points: f64, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+    let points_image = match gift_points as i32 {
+      10 => self.points10_image,
+      15 => self.points15_image,
+      20 => self.points20_image,
+      _ => self.points10_image,
+    };
+
+    points_image.draw(canvas, Point::new(
+        position.x + self.points_offset.x + self.star_image.width() / 2.0,
+        position.y + self.points_offset.y + self.star_image.height()), 0.0)
   }
 }
