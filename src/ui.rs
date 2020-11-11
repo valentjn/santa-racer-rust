@@ -14,8 +14,8 @@ pub struct Score<'a> {
   damage_image: &'a assets::Image<'a>,
   time_image: &'a assets::Image<'a>,
 
-  gift_points: i64,
-  damage_points: i64,
+  gift_points: f64,
+  damage_points: f64,
   remaining_duration: std::time::Duration,
   last_update_instant: std::time::Instant,
 
@@ -55,24 +55,32 @@ impl<'a> Score<'a> {
       damage_image: asset_library.get_image("damageScoreIcon"),
       time_image: asset_library.get_image("timeScoreIcon"),
 
-      gift_points: 0,
-      damage_points: 0,
+      gift_points: 0.0,
+      damage_points: 0.0,
       remaining_duration: std::time::Duration::from_secs(0),
       last_update_instant: std::time::Instant::now(),
 
       gift_position_x: 0.0,
       damage_position_x: 150.0,
-      time_position_x: 520.0,
-      margin_x: 40.0,
+      time_position_x: 535.0,
+      margin_x: 35.0,
       position_y: gift_image.height() / 2.0,
     };
   }
 
   pub fn reset(&mut self) {
-    self.gift_points = 0;
-    self.damage_points = 0;
+    self.gift_points = 0.0;
+    self.damage_points = 0.0;
     self.remaining_duration = std::time::Duration::from_secs(450);
     self.last_update_instant = std::time::Instant::now();
+  }
+
+  pub fn add_gift_points(&mut self, gift_points: f64) {
+    self.gift_points += gift_points;
+  }
+
+  pub fn add_damage_points(&mut self, damage_points: f64) {
+    self.damage_points += damage_points;
   }
 
   pub fn do_logic(&mut self) {
@@ -87,11 +95,11 @@ impl<'a> Score<'a> {
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &'a Font<'a>) {
     self.gift_image.draw(canvas, Point::new(self.gift_position_x, 0.0), 0.0);
     font.draw_monospace(canvas, Point::new(self.gift_position_x + self.margin_x, self.position_y),
-        format!("{}", self.gift_points), Alignment::CenterLeft);
+        format!("{}", self.gift_points as i32), Alignment::CenterLeft);
 
     self.damage_image.draw(canvas, Point::new(self.damage_position_x, 0.0), 0.0);
     font.draw_monospace(canvas, Point::new(self.damage_position_x + self.margin_x, self.position_y),
-        format!("{}", -self.damage_points), Alignment::CenterLeft);
+        format!("{}", -self.damage_points as i32), Alignment::CenterLeft);
 
     let seconds = self.remaining_duration.as_secs_f64();
     let minutes = (seconds / 60.0).floor() as i32;
