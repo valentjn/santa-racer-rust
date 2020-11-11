@@ -52,8 +52,8 @@ pub struct Gift<'a> {
 #[derive(PartialEq)]
 pub enum GiftMode {
   Falling,
-  CollidedWithChimney,
-  CollidedWithGround,
+  CollidedWithChimney(f64),
+  CollidedWithGround(f64),
   ShowingPoints,
   CanBeDeleted,
 }
@@ -196,10 +196,12 @@ impl<'a, 'b> Gift<'a> {
       self.velocity.y += seconds_since_last_update * self.acceleration.y;
       self.frame += seconds_since_last_update * self.frame_speed;
 
-      if self.has_collided_with_chimney(level, chimneys) {
-        self.mode = GiftMode::CollidedWithChimney;
+      if let Some(chimney_tile_y) = self.has_collided_with_chimney(level, chimneys) {
+        let gift_points = if chimney_tile_y <= 1 { 10.0 }
+            else if chimney_tile_y == 2 { 15.0 } else { 20.0 };
+        self.mode = GiftMode::CollidedWithChimney(gift_points);
       } else if self.has_collided_with_ground() {
-        self.mode = GiftMode::CollidedWithGround;
+        self.mode = GiftMode::CollidedWithGround(15.0);
       }
     }
 
@@ -207,7 +209,7 @@ impl<'a, 'b> Gift<'a> {
   }
 
   fn has_collided_with_chimney(&self, level: &'b level::Level<'a>,
-        chimneys: &'b Vec<Chimney>) -> bool {
+        chimneys: &'b Vec<Chimney>) -> Option<usize> {
     for (tile_x, tile_y) in level.visible_tiles_iter() {
       let frame = level.background_object_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
@@ -220,12 +222,12 @@ impl<'a, 'b> Gift<'a> {
               && (self.position.x <= tile_position.x + chimney.position.x + chimney.size.x)
               && (self.position.y >= tile_position.y + chimney.position.y)
               && (self.position.y <= tile_position.y + chimney.position.y + chimney.size.y) {
-          return true;
+          return Some(tile_y);
         }
       }
     }
 
-    return false;
+    return None;
   }
 
   fn has_collided_with_ground(&self) -> bool {
