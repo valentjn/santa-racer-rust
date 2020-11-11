@@ -114,7 +114,7 @@ impl<'a> Font<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Font<'a> {
     let character_widths = asset_library.get_data("fontCharacterWidths").clone_as_i32();
     let max_character_width: i32 = *character_widths.iter().max().expect(
-      "No elements in character_widths");
+        "No elements in character_widths");
 
     return Font{
       image: asset_library.get_image("font"),
@@ -147,10 +147,8 @@ impl<'a> Font<'a> {
 
     let text_character_widths: Vec<i32> =
         frames.iter().map(|&x| self.character_widths[x as usize]).collect();
-    let text_width: i32 = match monospace {
-      true => (text.len() as i32) * self.max_character_width,
-      false => text_character_widths.iter().sum(),
-    } as i32;
+    let text_width: i32 = if monospace { (text.len() as i32) * self.max_character_width }
+        else { text_character_widths.iter().sum() } as i32;
     let text_height = self.image.height();
 
     let mut dst_point = Point::new(
@@ -160,20 +158,16 @@ impl<'a> Font<'a> {
 
     for x in text.chars().zip(text_character_widths.iter()).zip(frames.iter()) {
       let ((character, character_width), frame) = x;
-
-      if monospace {
-        dst_point.x += ((self.max_character_width as f64) -
-            (*character_width as f64)) / 2.0;
-      }
+      let monospace_offset_x = ((self.max_character_width as f64)
+          - (*character_width as f64)) / 2.0;
+      if monospace { dst_point.x += monospace_offset_x; }
 
       if character != ' ' {
         self.image.draw(canvas, dst_point, *frame as f64);
       }
 
-      dst_point.x += match monospace {
-        true => self.max_character_width,
-        false => *character_width,
-      } as f64;
+      dst_point.x += *character_width as f64;
+      if monospace { dst_point.x += monospace_offset_x; }
     }
   }
 }
