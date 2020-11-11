@@ -18,10 +18,21 @@ pub struct Level<'a> {
   pub scroll_speed_x: f64,
   last_update_instant: std::time::Instant,
 
-  tile_size: Point,
-  number_of_visible_map_columns: usize,
+  pub tile_size: Point,
+  number_of_tiles: (usize, usize),
+  number_of_visible_tiles_x: usize,
   min_scroll_speed_x: f64,
   max_scroll_speed_x: f64,
+}
+
+pub struct TileIterator {
+  tile_x: usize,
+  tile_y: usize,
+
+  min_tile_x: usize,
+  max_tile_x: usize,
+  min_tile_y: usize,
+  max_tile_y: usize,
 }
 
 pub struct Landscape<'a> {
@@ -31,7 +42,7 @@ pub struct Landscape<'a> {
   size: Point,
 }
 
-const NUMBER_OF_MAP_ROWS: usize = 5;
+const NUMBER_OF_TILES_Y: usize = 5;
 const MIN_SCROLL_SPEED_X: f64 = 40.0;
 const MAX_SCROLL_SPEED_X: f64 = 160.0;
 
@@ -39,20 +50,37 @@ impl<'a> Level<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Level {
     let image = asset_library.get_image("level");
     let tile_size = image.size();
+    let background_object_map = Level::convert_data_to_map(
+      asset_library.get_data("backgroundObjectMap").to_vec());
+    let foreground_object_map = Level::convert_data_to_map(
+      asset_library.get_data("foregroundObjectMap").to_vec());
+
+    assert!(background_object_map.len() == foreground_object_map.len(),
+        "Lengths of background and foreground object maps are not equal");
+    assert!(background_object_map.len() > 0, "Background object map is empty");
+
+    let number_of_tiles_x = background_object_map[0].len();
+    let number_of_tiles_y = background_object_map.len();
+
+    for tile_y in 0 .. number_of_tiles_y {
+      assert!(background_object_map[tile_y].len() == number_of_tiles_x,
+          "Rows of background object map do not have equal length");
+      assert!(foreground_object_map[tile_y].len() == number_of_tiles_x,
+          "Rows of foreground object map do not have equal length");
+    }
 
     return Level{
       image: image,
-      background_object_map: Level::convert_data_to_map(
-        asset_library.get_data("backgroundObjectMap").to_vec()),
-      foreground_object_map: Level::convert_data_to_map(
-        asset_library.get_data("foregroundObjectMap").to_vec()),
+      background_object_map: background_object_map,
+      foreground_object_map: foreground_object_map,
       canvas_size: canvas_size,
 
       offset_x: 0.0,
       scroll_speed_x: 0.0,
-      number_of_visible_map_columns: (canvas_size.x / tile_size.x + 1.0) as usize,
 
       tile_size: tile_size,
+      number_of_tiles: (number_of_tiles_x, number_of_tiles_y),
+      number_of_visible_tiles_x: (canvas_size.x / tile_size.x + 1.0) as usize,
       last_update_instant: std::time::Instant::now(),
       min_scroll_speed_x: MIN_SCROLL_SPEED_X,
       max_scroll_speed_x: MAX_SCROLL_SPEED_X,
@@ -60,15 +88,15 @@ impl<'a> Level<'a> {
   }
 
   fn convert_data_to_map(data: Vec<f64>) -> Vec<Vec<f64>> {
-    let number_of_map_rows = NUMBER_OF_MAP_ROWS;
-    let number_of_map_columns = (data.len() as f64 / number_of_map_rows as f64).ceil() as usize;
+    let number_of_tiles_y = NUMBER_OF_TILES_Y;
+    let number_of_tiles_x = (data.len() as f64 / number_of_tiles_y as f64).ceil() as usize;
     let mut map: Vec<Vec<f64>> = Vec::new();
 
-    for tile_y in 0 .. number_of_map_rows {
+    for tile_y in 0 .. number_of_tiles_y {
       let mut row: Vec<f64> = Vec::new();
 
-      for tile_x in 0 .. number_of_map_columns {
-        let i = tile_x + tile_y * number_of_map_columns;
+      for tile_x in 0 .. number_of_tiles_x {
+        let i = tile_x + tile_y * number_of_tiles_x;
         row.push(if i < data.len() { data[i] } else { 0.0 });
       }
 
@@ -92,18 +120,57 @@ impl<'a> Level<'a> {
 
   pub fn draw_background<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+    for (tile_x, tile_y) in self.visible_tiles_iter() {
+      let frame = self.background_object_map[tile_y][tile_x];
+      if frame < 0.0 { continue; }
+      let dst_point = Point::new((tile_x as f64) * self.tile_size.x - self.offset_x,
+          (tile_y as f64) * self.tile_size.y);
+      self.image.draw(canvas, dst_point, frame);
+    }
+  }
+
+  pub fn visible_tiles_iter(&self) -> TileIterator {
     let min_tile_x = (self.offset_x / self.tile_size.x) as usize;
+    let max_tile_x = (min_tile_x + self.number_of_visible_tiles_x + 1).min(self.number_of_tiles.0);
+    let min_tile_y = 0;
+    let max_tile_y = self.background_object_map.len();
 
-    for tile_y in 0 .. self.background_object_map.len() {
-      let row = &self.background_object_map[tile_y];
-      let max_tile_x = (min_tile_x + self.number_of_visible_map_columns + 1).min(row.len());
+    return TileIterator {
+      tile_x: min_tile_x,
+      tile_y: min_tile_y,
 
-      for tile_x in min_tile_x .. max_tile_x {
-        if row[tile_x] < 0.0 { continue; }
-        let dst_point = Point::new((tile_x as f64) * self.tile_size.x - self.offset_x,
-            (tile_y as f64) * self.tile_size.y);
-        self.image.draw(canvas, dst_point, row[tile_x]);
+      min_tile_x: min_tile_x,
+      max_tile_x: max_tile_x,
+      min_tile_y: min_tile_y,
+      max_tile_y: max_tile_y,
+    };
+  }
+}
+
+impl Iterator for TileIterator {
+  type Item = (usize, usize);
+
+  fn next(&mut self) -> Option<Self::Item> {
+    if self.tile_y >= self.min_tile_y {
+      if self.tile_x >= self.min_tile_x {
+        self.tile_x += 1;
+      } else {
+        self.tile_x = self.min_tile_x;
       }
+    } else {
+      self.tile_x = self.min_tile_x;
+      self.tile_y = self.min_tile_y;
+    }
+
+    if self.tile_x >= self.max_tile_x {
+      self.tile_x = self.min_tile_x;
+      self.tile_y += 1;
+    }
+
+    if self.tile_y >= self.max_tile_y {
+      return None;
+    } else {
+      return Some((self.tile_x, self.tile_y));
     }
   }
 }
