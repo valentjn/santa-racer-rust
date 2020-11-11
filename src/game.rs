@@ -33,6 +33,7 @@ pub struct Game<'a: 'b, 'b> {
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: fg_objects::Sleigh<'a>,
+  chimneys: Vec<fg_objects::Chimney>,
   gifts: Vec<fg_objects::Gift<'b>>,
 
   last_gift_instant: std::time::Instant,
@@ -93,6 +94,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let landscape = level::Landscape::new(asset_library);
     let level = level::Level::new(asset_library, buffer_size);
     let sleigh = fg_objects::Sleigh::new(asset_library, buffer_size, texture_creator);
+    let chimneys = Game::load_chimneys(asset_library);
 
     return Game{
       options: options,
@@ -120,10 +122,28 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       landscape: landscape,
       level: level,
       sleigh: sleigh,
+      chimneys: chimneys,
       gifts: Vec::new(),
 
       last_gift_instant: std::time::Instant::now(),
     };
+  }
+
+  fn load_chimneys(asset_library: &'a assets::AssetLibrary) ->
+        Vec<fg_objects::Chimney> {
+    let data = asset_library.get_data("chimneys");
+    let mut chimneys = Vec::new();
+    assert!(data.len() % 4 == 0, "Length of chimney hit box data not divisible by 4");
+
+    for i in 0 .. data.len() / 4 {
+      chimneys.push(fg_objects::Chimney{
+        position: Point::new(data[4 * i], data[4 * i + 1]),
+        size: Point::new(data[4 * i + 2], 5.0),
+        frame: data[4 * i + 3],
+      });
+    }
+
+    return chimneys;
   }
 
   pub fn run_loop(&mut self) {
@@ -193,7 +213,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let mut i = 0;
 
     while i < self.gifts.len() {
-      self.gifts[i].do_logic();
+      self.gifts[i].do_logic(&self.level, &self.chimneys);
 
       if self.gifts[i].mode == fg_objects::GiftMode::CollidedWithChimney {
         self.play_sound_with_level_position("giftCollidedWithChimney", self.gifts[i].position.x);

@@ -10,7 +10,7 @@ use crate::assets::Point;
 
 pub struct Level<'a> {
   image: &'a assets::Image<'a>,
-  background_object_map: Vec<Vec<f64>>,
+  pub background_object_map: Vec<Vec<f64>>,
   foreground_object_map: Vec<Vec<f64>>,
   canvas_size: Point,
 

@@ -28,6 +28,12 @@ pub struct Sleigh<'a> {
   frame_speed: f64,
 }
 
+pub struct Chimney {
+  pub position: Point,
+  pub size: Point,
+  pub frame: f64,
+}
+
 pub struct Gift<'a> {
   image: &'a assets::Image<'a>,
   canvas_size: assets::Point,
@@ -179,7 +185,7 @@ impl<'a, 'b> Gift<'a> {
     };
   }
 
-  pub fn do_logic(&mut self) {
+  pub fn do_logic(&mut self, level: &'b level::Level<'a>, chimneys: &'b Vec<Chimney>) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
@@ -190,7 +196,7 @@ impl<'a, 'b> Gift<'a> {
       self.velocity.y += seconds_since_last_update * self.acceleration.y;
       self.frame += seconds_since_last_update * self.frame_speed;
 
-      if self.has_collided_with_chimney() {
+      if self.has_collided_with_chimney(level, chimneys) {
         self.mode = GiftMode::CollidedWithChimney;
       } else if self.has_collided_with_ground() {
         self.mode = GiftMode::CollidedWithGround;
@@ -200,8 +206,25 @@ impl<'a, 'b> Gift<'a> {
     self.last_update_instant = now;
   }
 
-  fn has_collided_with_chimney(&self) -> bool {
-    // TODO
+  fn has_collided_with_chimney(&self, level: &'b level::Level<'a>,
+        chimneys: &'b Vec<Chimney>) -> bool {
+    for (tile_x, tile_y) in level.visible_tiles_iter() {
+      let frame = level.background_object_map[tile_y][tile_x];
+      if frame < 0.0 { continue; }
+      let tile_position = Point::new((tile_x as f64) * level.tile_size.x,
+          (tile_y as f64) * level.tile_size.y);
+
+      for chimney in chimneys.iter() {
+        if (chimney.frame == frame)
+              && (self.position.x >= tile_position.x + chimney.position.x)
+              && (self.position.x <= tile_position.x + chimney.position.x + chimney.size.x)
+              && (self.position.y >= tile_position.y + chimney.position.y)
+              && (self.position.y <= tile_position.y + chimney.position.y + chimney.size.y) {
+          return true;
+        }
+      }
+    }
+
     return false;
   }
 
