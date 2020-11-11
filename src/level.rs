@@ -64,11 +64,11 @@ impl<'a> Level<'a> {
     let number_of_map_columns = (data.len() as f64 / number_of_map_rows as f64).ceil() as usize;
     let mut map: Vec<Vec<f64>> = Vec::new();
 
-    for y in 0 .. number_of_map_rows {
+    for tile_y in 0 .. number_of_map_rows {
       let mut row: Vec<f64> = Vec::new();
 
-      for x in 0 .. number_of_map_columns {
-        let i = x + y * number_of_map_columns;
+      for tile_x in 0 .. number_of_map_columns {
+        let i = tile_x + tile_y * number_of_map_columns;
         row.push(if i < data.len() { data[i] } else { 0.0 });
       }
 
@@ -92,17 +92,17 @@ impl<'a> Level<'a> {
 
   pub fn draw_background<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
-    let min_x = (self.offset_x / self.tile_size.x) as usize;
+    let min_tile_x = (self.offset_x / self.tile_size.x) as usize;
 
-    for y in 0 .. self.background_object_map.len() {
-      let row = &self.background_object_map[y];
-      let max_x = (min_x + self.number_of_visible_map_columns + 1).min(row.len());
+    for tile_y in 0 .. self.background_object_map.len() {
+      let row = &self.background_object_map[tile_y];
+      let max_tile_x = (min_tile_x + self.number_of_visible_map_columns + 1).min(row.len());
 
-      for x in min_x .. max_x {
-        if row[x] < 0.0 { continue; }
-        let dst_point = Point::new((x as f64) * self.tile_size.x - self.offset_x,
-            (y as f64) * self.tile_size.y);
-        self.image.draw(canvas, dst_point, row[x]);
+      for tile_x in min_tile_x .. max_tile_x {
+        if row[tile_x] < 0.0 { continue; }
+        let dst_point = Point::new((tile_x as f64) * self.tile_size.x - self.offset_x,
+            (tile_y as f64) * self.tile_size.y);
+        self.image.draw(canvas, dst_point, row[tile_x]);
       }
     }
   }
