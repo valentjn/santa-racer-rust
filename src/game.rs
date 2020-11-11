@@ -26,6 +26,7 @@ pub struct Game<'a: 'b, 'b> {
   asset_library: &'a assets::AssetLibrary<'a>,
 
   mode: Mode,
+  difficulty: Difficulty,
 
   font: ui::Font<'a>,
   score: ui::Score<'a>,
@@ -60,6 +61,12 @@ enum Mode {
   LostDueToTime,
   LostDueToDamage,
   NewHighscore,
+}
+
+#[derive(Clone, Copy)]
+pub enum Difficulty {
+  Easy,
+  Hard,
 }
 
 const BUFFER_WIDTH: f64 = 640.0;
@@ -106,6 +113,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
       // TODO
       mode: Mode::Running,
+      difficulty: Difficulty::Easy,
 
       font: font,
       score: score,
@@ -156,7 +164,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
           } else if (keycode == sdl2::keyboard::Keycode::Space)
                 && (now.duration_since(self.last_gift_instant) >= NEW_GIFT_WAIT_DURATION) {
             self.gifts.push(fg_objects::Gift::new(
-                self.asset_library, &self.level, &self.sleigh, self.buffer_size));
+                self.asset_library, &self.level, &self.sleigh, self.buffer_size, self.difficulty));
             self.last_gift_instant = now;
           }
         },

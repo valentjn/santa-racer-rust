@@ -153,10 +153,15 @@ impl<'a> Sleigh<'a> {
 
 impl<'a, 'b> Gift<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>, level: &'b level::Level<'a>,
-        sleigh: &'b Sleigh<'a>, canvas_size: Point) -> Gift<'a> {
+        sleigh: &'b Sleigh<'a>, canvas_size: Point, difficulty: game::Difficulty) -> Gift<'a> {
     let number_of_gift_types = 4;
     let image = asset_library.get_image(format!("gift{}",
         rand::thread_rng().gen_range(1, number_of_gift_types)));
+    let velocity = match difficulty {
+      game::Difficulty::Easy => Point::new(level.scroll_speed_x, 50.0),
+      game::Difficulty::Hard => Point::new(sleigh.velocity.x + level.scroll_speed_x,
+        sleigh.velocity.y + 50.0),
+    };
 
     return Gift{
       image: image,
@@ -165,7 +170,7 @@ impl<'a, 'b> Gift<'a> {
       mode: GiftMode::Falling,
 
       position: Point::new(sleigh.position.x + level.offset_x, sleigh.position.y + sleigh.size.y),
-      velocity: Point::new(level.scroll_speed_x, 50.0),
+      velocity: velocity,
       acceleration: Point::new(0.0, 200.0),
       frame: rand::thread_rng().gen_range(0, image.total_number_of_frames()) as f64,
       last_update_instant: std::time::Instant::now(),
