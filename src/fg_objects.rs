@@ -104,11 +104,21 @@ impl<'a> Sleigh<'a> {
   fn update_velocity_x(&mut self, sign: f64) {
     self.velocity.x = (self.velocity.x + sign * self.acceleration.x)
         .max(-self.max_velocity.x).min(self.max_velocity.x);
+
+    if ((self.velocity.x < 0.0) && (self.position.x <= 0.0))
+          || ((self.velocity.x > 0.0) && (self.position.x >= self.canvas_size.x - self.size.x)) {
+      self.velocity.x = 0.0;
+    }
   }
 
   fn update_velocity_y(&mut self, sign: f64) {
     self.velocity.y = (self.velocity.y + sign * self.acceleration.y)
         .max(-self.max_velocity.y).min(self.max_velocity.y);
+
+    if ((self.velocity.y < 0.0) && (self.position.y <= 0.0))
+          || ((self.velocity.y > 0.0) && (self.position.y >= self.canvas_size.y - self.size.y)) {
+      self.velocity.y = 0.0;
+    }
   }
 
   pub fn do_logic(&mut self) {
