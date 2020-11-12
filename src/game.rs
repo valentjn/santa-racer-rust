@@ -99,7 +99,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       buffer_size: buffer_size,
       event_pump: event_pump,
 
-      target_fps: 30.0,
+      target_fps: 60.0,
       quit_flag: false,
       fps: 0.0,
       frame_counter: 0,
