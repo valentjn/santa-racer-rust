@@ -8,6 +8,14 @@
 use crate::*;
 use crate::assets::Point;
 
+pub struct Landscape<'a> {
+  image: &'a assets::Image<'a>,
+  offset_x: f64,
+  last_update_instant: std::time::Instant,
+  size: Point,
+  scroll_speed_factor_x: f64,
+}
+
 pub struct Level<'a> {
   pub image: &'a assets::Image<'a>,
   pub background_object_map: Vec<Vec<f64>>,
@@ -35,12 +43,39 @@ pub struct TileIterator {
   max_tile_y: usize,
 }
 
-pub struct Landscape<'a> {
-  image: &'a assets::Image<'a>,
-  offset_x: f64,
-  last_update_instant: std::time::Instant,
-  size: Point,
-  scroll_speed_factor_x: f64,
+impl<'a> Landscape<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Landscape {
+    let image = asset_library.get_image("landscape");
+
+    return Landscape{
+      image: image,
+      offset_x: 0.0,
+      last_update_instant: std::time::Instant::now(),
+      size: image.size(),
+      scroll_speed_factor_x: 0.1,
+    };
+  }
+
+  pub fn do_logic(&mut self, level: &level::Level) {
+    let now = std::time::Instant::now();
+    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+
+    let scroll_speed_x = self.scroll_speed_factor_x * level.scroll_speed_x;
+    self.offset_x = (self.offset_x + seconds_since_last_update * scroll_speed_x) %
+        self.size.x;
+
+    self.last_update_instant = now;
+  }
+
+  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+    self.image.draw_blit(canvas, sdl2::rect::Rect::new(self.offset_x as i32, 0,
+        (self.size.x - self.offset_x) as u32, self.size.y as u32),
+        Point::zero(), 0.0);
+    self.image.draw_blit(canvas, sdl2::rect::Rect::new(0, 0,
+        self.offset_x as u32, self.size.y as u32),
+        Point::new(self.size.x - self.offset_x, 0.0), 0.0);
+  }
 }
 
 impl<'a> Level<'a> {
@@ -169,40 +204,5 @@ impl Iterator for TileIterator {
     } else {
       return Some((self.tile_x, self.tile_y));
     }
-  }
-}
-
-impl<'a> Landscape<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Landscape {
-    let image = asset_library.get_image("landscape");
-
-    return Landscape{
-      image: image,
-      offset_x: 0.0,
-      last_update_instant: std::time::Instant::now(),
-      size: image.size(),
-      scroll_speed_factor_x: 0.1,
-    };
-  }
-
-  pub fn do_logic(&mut self, level: &level::Level) {
-    let now = std::time::Instant::now();
-    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
-
-    let scroll_speed_x = self.scroll_speed_factor_x * level.scroll_speed_x;
-    self.offset_x = (self.offset_x + seconds_since_last_update * scroll_speed_x) %
-        self.size.x;
-
-    self.last_update_instant = now;
-  }
-
-  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
-    self.image.draw_blit(canvas, sdl2::rect::Rect::new(self.offset_x as i32, 0,
-        (self.size.x - self.offset_x) as u32, self.size.y as u32),
-        Point::zero(), 0.0);
-    self.image.draw_blit(canvas, sdl2::rect::Rect::new(0, 0,
-        self.offset_x as u32, self.size.y as u32),
-        Point::new(self.size.x - self.offset_x, 0.0), 0.0);
   }
 }
