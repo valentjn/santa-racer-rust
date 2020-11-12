@@ -292,7 +292,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let now = std::time::Instant::now();
     let duration_since_last_fps_update = now.duration_since(self.last_fps_update_instant);
 
-    if duration_since_last_fps_update >= std::time::Duration::from_secs(1) {
+    if duration_since_last_fps_update >= std::time::Duration::from_millis(1000) {
       self.fps = (self.frame_counter as f64) / duration_since_last_fps_update.as_secs_f64();
       if self.options.verbose_enabled { println!("FPS: {:.1}", self.fps); }
       self.last_fps_update_instant = now;

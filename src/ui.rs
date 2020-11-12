@@ -57,7 +57,7 @@ impl<'a> Score<'a> {
 
       gift_points: 0.0,
       damage_points: 0.0,
-      remaining_duration: std::time::Duration::from_secs(0),
+      remaining_duration: std::time::Duration::from_millis(0),
       last_update_instant: std::time::Instant::now(),
 
       gift_position_x: 0.0,
@@ -71,7 +71,7 @@ impl<'a> Score<'a> {
   pub fn reset(&mut self) {
     self.gift_points = 0.0;
     self.damage_points = 0.0;
-    self.remaining_duration = std::time::Duration::from_secs(450);
+    self.remaining_duration = std::time::Duration::from_millis(450000);
     self.last_update_instant = std::time::Instant::now();
   }
 
@@ -86,7 +86,7 @@ impl<'a> Score<'a> {
   pub fn do_logic(&mut self) {
     let now = std::time::Instant::now();
     self.remaining_duration -= now - self.last_update_instant;
-    let zero_duration = std::time::Duration::from_secs(0);
+    let zero_duration = std::time::Duration::from_millis(0);
     if self.remaining_duration < zero_duration { self.remaining_duration = zero_duration; }
     self.last_update_instant = now;
   }
