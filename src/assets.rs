@@ -46,7 +46,7 @@ pub struct Sound {
   chunk: Option<sdl2::mixer::Chunk>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Point {
   pub x: f64,
   pub y: f64,
