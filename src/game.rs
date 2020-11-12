@@ -85,9 +85,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let buffer_texture = texture_creator.create_texture_target(
         None, BUFFER_WIDTH as u32, BUFFER_HEIGHT as u32).expect("Could not create buffer texture");
 
-    if options.sound_enabled {
-      asset_library.get_song("music").play();
-    }
+    asset_library.get_song("music").play();
 
     let font = ui::Font::new(asset_library);
     let score = ui::Score::new(asset_library);
@@ -234,10 +232,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
   }
 
   fn play_sound_with_position<S: Into<String>>(&self, sound_name: S, position_x: f64) {
-    if self.options.sound_enabled {
-      self.asset_library.get_sound(sound_name).play_with_pan(
-          position_x / self.buffer_size.x);
-    }
+    self.asset_library.get_sound(sound_name).play_with_pan(
+       position_x / self.buffer_size.x);
   }
 
   fn play_sound_with_level_position<S: Into<String>>(&self, sound_name: S, position_x: f64) {

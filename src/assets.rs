@@ -39,11 +39,11 @@ pub struct Image<'a> {
 }
 
 pub struct Song<'a> {
-  music: sdl2::mixer::Music<'a>,
+  music: Option<sdl2::mixer::Music<'a>>,
 }
 
 pub struct Sound {
-  chunk: sdl2::mixer::Chunk,
+  chunk: Option<sdl2::mixer::Chunk>,
 }
 
 #[derive(Clone, Copy)]
@@ -76,20 +76,22 @@ impl<'a> AssetLibrary<'a> {
     };
   }
 
-  pub fn get_data<S: Into<String>>(&'a self, name: S) -> &'a Vec<f64> {
-    return self.data_library.get_asset(name);
+  pub fn get_data<S: Into<String> + std::clone::Clone>(&'a self, name: S) -> &'a Vec<f64> {
+    return self.data_library.get_asset(name.clone()).expect(
+        format!("Could not find data asset with name '{}'", name.into()).as_str());
   }
 
-  pub fn get_image<S: Into<String>>(&'a self, name: S) -> &'a Image<'a> {
-    return self.image_library.get_asset(name);
+  pub fn get_image<S: Into<String> + std::clone::Clone>(&'a self, name: S) -> &'a Image<'a> {
+    return self.image_library.get_asset(name.clone()).expect(
+        format!("Could not find image asset with name '{}'", name.into()).as_str());
   }
 
   pub fn get_song<S: Into<String>>(&'a self, name: S) -> &'a Song<'a> {
-    return self.song_library.get_asset(name);
+    return self.song_library.get_asset(name).unwrap_or(&Song::NONE);
   }
 
   pub fn get_sound<S: Into<String>>(&'a self, name: S) -> &'a Sound {
-    return self.sound_library.get_asset(name);
+    return self.sound_library.get_asset(name).unwrap_or(&Sound::NONE);
   }
 }
 
@@ -119,10 +121,9 @@ impl<'a, AssetType> SingleTypeAssetLibrary<AssetType> {
     }
   }
 
-  pub fn get_asset<S: Into<String>>(&'a self, name: S) -> &'a AssetType {
+  fn get_asset<S: Into<String>>(&'a self, name: S) -> Option<&'a AssetType> {
     let name: String = name.into();
-    return self.map.get(&name).expect(
-        format!("Could not find asset with name '{}'", name).as_str());
+    return self.map.get(&name);
   }
 }
 
@@ -363,27 +364,35 @@ impl<'a> Image<'a> {
 }
 
 impl<'a> Song<'a> {
+  const NONE: assets::Song<'a> = Song{
+    music: None,
+  };
+
   fn new(file_path: &std::path::Path) -> Song<'a> {
     let file_path_str = file_path.to_str().expect("Could not convert path to string");
 
     return Song{
-      music: sdl2::mixer::Music::from_file(file_path).expect(
-          format!("Could not load song from {}", file_path_str).as_str()),
+      music: Some(sdl2::mixer::Music::from_file(file_path).expect(
+          format!("Could not load song from {}", file_path_str).as_str())),
     };
   }
 
   pub fn play(&self) {
-    self.music.play(-1).expect("Could not play song");
+    if let Some(music) = &self.music { music.play(-1).expect("Could not play song"); }
   }
 }
 
 impl Sound {
+  const NONE: assets::Sound = Sound{
+    chunk: None,
+  };
+
   fn new(file_path: &std::path::Path) -> Sound {
     let file_path_str = file_path.to_str().expect("Could not convert path to string");
 
     return Sound{
-      chunk: sdl2::mixer::Chunk::from_file(file_path).expect(
-          format!("Could not load sound from {}", file_path_str).as_str()),
+      chunk: Some(sdl2::mixer::Chunk::from_file(file_path).expect(
+          format!("Could not load sound from {}", file_path_str).as_str())),
     };
   }
 
@@ -400,14 +409,16 @@ impl Sound {
   }
 
   pub fn play_with_volume_and_pan(&self, volume: f64, pan: f64) {
-    let left: u8 = (2.0 * (1.0 - pan) * 255.0).max(0.0).min(255.0) as u8;
-    let right: u8 = (2.0 * pan * 255.0).max(0.0).min(255.0) as u8;
+    if let Some(chunk) = &self.chunk {
+      let left: u8 = (2.0 * (1.0 - pan) * 255.0).max(0.0).min(255.0) as u8;
+      let right: u8 = (2.0 * pan * 255.0).max(0.0).min(255.0) as u8;
 
-    let channel = Sound::get_free_channel().expect("Could not find free channel");
-    channel.set_volume((128.0 * volume) as i32);
-    channel.set_panning(left, right).expect(
-        format!("Could not set panning with left = {} and right = {}", left, right).as_str());
-    channel.play(&self.chunk, 0).expect("Could not play sound");
+      let channel = Sound::get_free_channel().expect("Could not find free channel");
+      channel.set_volume((128.0 * volume) as i32);
+      channel.set_panning(left, right).expect(
+          format!("Could not set panning with left = {} and right = {}", left, right).as_str());
+      channel.play(&chunk, 0).expect("Could not play sound");
+    }
   }
 
   fn get_free_channel() -> Option<sdl2::mixer::Channel> {
