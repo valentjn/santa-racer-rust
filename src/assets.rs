@@ -280,33 +280,39 @@ impl<'a> Image<'a> {
     canvas.copy(&self.texture, src_rect, dst_rect).expect("Could not copy texture");
   }
 
-  pub fn collides(&self, point: Point, frame: i32, other: Image, other_point: Point,
-        other_frame: i32) -> bool {
-    let (width, height) = (self.width(), self.height());
-    let (other_width, other_height) = (other.width(), other.height());
+  pub fn collides(&self, point: Point, frame: f64, other: &Image, other_point: Point,
+        other_frame: f64) -> bool {
+    let (point_x, point_y) = (point.x as i32, point.y as i32);
+    let (other_point_x, other_point_y) = (other_point.x as i32, other_point.y as i32);
+    let frame = frame as i32;
+    let other_frame = other_frame as i32;
+    let (width, height) = (self.width() as i32, self.height() as i32);
+    let (other_width, other_height) = (other.width() as i32, other.height() as i32);
 
-    if ((point.x < other_point.x) && (point.x + width < other_point.x))
-          || ((other_point.x < point.x) && (other_point.x + other_width < point.x))
-          || ((point.y < other_point.y) && (point.y + height < other_point.y))
-          || ((other_point.y < point.y) && (other_point.y + other_height < point.y)) {
+    if ((point_x < other_point_x) && (point_x + width < other_point_x))
+          || ((other_point_x < point_x) && (other_point_x + other_width < point_x))
+          || ((point_y < other_point_y) && (point_y + height < other_point_y))
+          || ((other_point_y < point_y) && (other_point_y + other_height < point_y)) {
       return false;
     }
 
-    let clip_rect_width = if point.x < other_point.x {
-          other_width.min(point.x + width - other_point.x) as u32
+    let clip_rect_width = if point_x < other_point_x {
+          other_width.min(point_x + width - other_point_x)
         } else {
-          width.min(other_point.x + other_width - point.x) as u32
+          width.min(other_point_x + other_width - point_x)
         };
 
-    let clip_rect_height = if point.y < other_point.y {
-          other_height.min(point.y + height - other_point.y) as u32
+    let clip_rect_height = if point_y < other_point_y {
+          other_height.min(point_y + height - other_point_y)
         } else {
-          height.min(other_point.y + other_height - point.y) as u32
+          height.min(other_point_y + other_height - point_y)
         };
+
+    if (clip_rect_width <= 0) || (clip_rect_height <= 0) { return false; }
 
     let clip_rect = sdl2::rect::Rect::new(
-        point.x.max(other_point.x) as i32, point.y.max(other_point.y) as i32,
-        clip_rect_width, clip_rect_height);
+        point_x.max(other_point_x), point_y.max(other_point_y),
+        clip_rect_width as u32, clip_rect_height as u32);
 
     let surface_width = self.surface.width() as i32;
     let other_surface_width = other.surface.width() as i32;
@@ -318,18 +324,18 @@ impl<'a> Image<'a> {
     for clip_y in clip_rect.top() .. clip_rect.bottom() {
       for clip_x in clip_rect.left() .. clip_rect.right() {
         let index = (
-            (clip_x - (point.x as i32)
-              + (frame % number_of_frames.0) * (width as i32))
-            + (clip_y - (point.y as i32)
+            (clip_x - point_x
+              + (frame % number_of_frames.0) * width)
+            + (clip_y - point_y
               + ((frame / number_of_frames.0) % number_of_frames.1)
-              * (height as i32)) * surface_width) as usize;
+              * height) * surface_width) as usize;
 
         let other_index = (
-            (clip_x - (other_point.x as i32)
-              + (other_frame % other_number_of_frames.0) * (other_width as i32))
-            + (clip_y - (other_point.y as i32)
+            (clip_x - other_point_x
+              + (other_frame % other_number_of_frames.0) * other_width)
+            + (clip_y - other_point_y
               + ((other_frame / other_number_of_frames.0) % other_number_of_frames.1)
-              * (other_height as i32)) * other_surface_width) as usize;
+              * other_height) * other_surface_width) as usize;
 
         if mask[index] && other_mask[other_index] { return true; }
       }
