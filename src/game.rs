@@ -37,6 +37,8 @@ pub struct Game<'a: 'b, 'b> {
   gifts: Vec<fg_objects::Gift<'b>>,
 
   last_gift_instant: std::time::Instant,
+
+  new_gift_wait_duration: std::time::Duration,
 }
 
 struct DrawArguments<'a: 'b, 'b> {
@@ -70,20 +72,14 @@ pub enum Difficulty {
   Hard,
 }
 
-const BUFFER_WIDTH: f64 = 640.0;
-const BUFFER_HEIGHT: f64 = 480.0;
-const TARGET_FPS: f64 = 30.0;
-const NEW_GIFT_WAIT_DURATION: std::time::Duration = std::time::Duration::from_millis(250);
-
 impl<'a: 'b, 'b> Game<'a, 'b> {
   pub fn new(canvas: &'a mut sdl2::render::WindowCanvas,
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         event_pump: &'a mut sdl2::EventPump,
         asset_library: &'a assets::AssetLibrary, options: &'a options::Options) -> Game<'a, 'b> {
-    let buffer_size = Point::from_u32_tuple(
-        canvas.output_size().expect("Could not get output size of canvas"));
+    let buffer_size = Point::new(640.0, 480.0);
     let buffer_texture = texture_creator.create_texture_target(
-        None, BUFFER_WIDTH as u32, BUFFER_HEIGHT as u32).expect("Could not create buffer texture");
+        None, buffer_size.x as u32, buffer_size.y as u32).expect("Could not create buffer texture");
 
     asset_library.get_song("music").play();
 
@@ -102,7 +98,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       buffer_size: buffer_size,
       event_pump: event_pump,
 
-      target_fps: TARGET_FPS,
+      target_fps: 30.0,
       quit_flag: false,
       fps: 0.0,
       frame_counter: 0,
@@ -124,6 +120,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       gifts: Vec::new(),
 
       last_gift_instant: std::time::Instant::now(),
+
+      new_gift_wait_duration: std::time::Duration::from_millis(250),
     };
   }
 
@@ -180,7 +178,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
             self.canvas.window_mut().set_fullscreen(fullscreen_state).expect(
                 "Could not change fullscreen state");
           } else if (keycode == sdl2::keyboard::Keycode::Space)
-                && (now.duration_since(self.last_gift_instant) >= NEW_GIFT_WAIT_DURATION) {
+                && (now.duration_since(self.last_gift_instant) >= self.new_gift_wait_duration) {
             self.gifts.push(fg_objects::Gift::new(
                 self.asset_library, &self.level, &self.sleigh, self.buffer_size, self.difficulty));
             self.last_gift_instant = now;

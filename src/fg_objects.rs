@@ -176,10 +176,11 @@ impl<'a> Gift<'a> {
     let number_of_gift_types = 4;
     let image = asset_library.get_image(format!("gift{}",
         rand::thread_rng().gen_range(1, number_of_gift_types)));
+    let velocity_y = 50.0;
     let velocity = match difficulty {
-      game::Difficulty::Easy => Point::new(level.scroll_speed_x, 50.0),
+      game::Difficulty::Easy => Point::new(level.scroll_speed_x, velocity_y),
       game::Difficulty::Hard => Point::new(sleigh.velocity.x + level.scroll_speed_x,
-        sleigh.velocity.y + 50.0),
+        velocity_y + sleigh.velocity.y),
     };
 
     return Gift{
@@ -210,6 +211,7 @@ impl<'a> Gift<'a> {
       star3_frame_offset: 4.0,
       frame_speed: 15.0,
       showing_points_frame_speed: 15.0,
+      damage_points: 15.0,
     };
   }
 
@@ -236,7 +238,7 @@ impl<'a> Gift<'a> {
         } else if self.has_collided_with_ground() {
           self.mode = GiftMode::CanBeDeleted;
           self.collided_with_ground_sound.play_with_level_position(level, self.position.x);
-          score.add_damage_points(15.0);
+          score.add_damage_points(self.damage_points);
         }
       },
       GiftMode::ShowingPoints(_) => {

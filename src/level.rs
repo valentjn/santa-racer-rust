@@ -40,11 +40,8 @@ pub struct Landscape<'a> {
   offset_x: f64,
   last_update_instant: std::time::Instant,
   size: Point,
+  scroll_speed_factor_x: f64,
 }
-
-const NUMBER_OF_TILES_Y: usize = 5;
-const MIN_SCROLL_SPEED_X: f64 = 40.0;
-const MAX_SCROLL_SPEED_X: f64 = 160.0;
 
 impl<'a> Level<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Level {
@@ -82,13 +79,13 @@ impl<'a> Level<'a> {
       number_of_tiles: (number_of_tiles_x, number_of_tiles_y),
       number_of_visible_tiles_x: (canvas_size.x / tile_size.x + 1.0) as usize,
       last_update_instant: std::time::Instant::now(),
-      min_scroll_speed_x: MIN_SCROLL_SPEED_X,
-      max_scroll_speed_x: MAX_SCROLL_SPEED_X,
+      min_scroll_speed_x: 40.0,
+      max_scroll_speed_x: 160.0,
     };
   }
 
   fn convert_data_to_map(data: Vec<f64>) -> Vec<Vec<f64>> {
-    let number_of_tiles_y = NUMBER_OF_TILES_Y;
+    let number_of_tiles_y = 5;
     let number_of_tiles_x = (data.len() as f64 / number_of_tiles_y as f64).ceil() as usize;
     let mut map: Vec<Vec<f64>> = Vec::new();
 
@@ -184,6 +181,7 @@ impl<'a> Landscape<'a> {
       offset_x: 0.0,
       last_update_instant: std::time::Instant::now(),
       size: image.size(),
+      scroll_speed_factor_x: 0.1,
     };
   }
 
@@ -191,7 +189,7 @@ impl<'a> Landscape<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
-    let scroll_speed_x = level.scroll_speed_x / 10.0;
+    let scroll_speed_x = self.scroll_speed_factor_x * level.scroll_speed_x;
     self.offset_x = (self.offset_x + seconds_since_last_update * scroll_speed_x) %
         self.size.x;
 
