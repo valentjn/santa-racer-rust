@@ -15,17 +15,28 @@ pub struct Sleigh<'a> {
   reindeer_image: assets::Image<'a>,
   canvas_size: assets::Point,
 
+  collided_with_level_sound1: &'a assets::Sound,
+  collided_with_level_sound2: &'a assets::Sound,
+
   pub size: Point,
   pub position: Point,
   velocity: Point,
   acceleration: Point,
   sleigh_frame: f64,
   reindeer_frame: f64,
+  invincible: bool,
+  immobile: bool,
+  invincible_remaining_duration: std::time::Duration,
+  immobile_remaining_duration: std::time::Duration,
   last_update_instant: std::time::Instant,
 
   max_velocity: Point,
   reindeer_offset: Point,
   frame_speed: f64,
+  level_collision_damage_points: f64,
+  invincible_duration: std::time::Duration,
+  immobile_duration: std::time::Duration,
+  invincible_blink_periods: i32,
 }
 
 pub struct Chimney {
@@ -62,6 +73,7 @@ pub struct Gift<'a> {
   star3_frame_offset: f64,
   frame_speed: f64,
   showing_points_frame_speed: f64,
+  damage_points: f64,
 }
 
 #[derive(PartialEq)]
@@ -86,21 +98,33 @@ impl<'a> Sleigh<'a> {
       reindeer_image: reindeer_image,
       canvas_size: canvas_size,
 
+      collided_with_level_sound1: asset_library.get_sound("sleighCollidedWithLevel1"),
+      collided_with_level_sound2: asset_library.get_sound("sleighCollidedWithLevel2"),
+
       size: size,
       position: Point::zero(),
       velocity: Point::zero(),
       acceleration: Point::new(25.0, 25.0),
       sleigh_frame: 0.0,
       reindeer_frame: 0.0,
+      invincible: false,
+      immobile: false,
+      invincible_remaining_duration: std::time::Duration::from_millis(0),
+      immobile_remaining_duration: std::time::Duration::from_millis(0),
       last_update_instant: std::time::Instant::now(),
 
       max_velocity: Point::new(200.0, 200.0),
       reindeer_offset: reindeer_offset,
       frame_speed: 13.0,
+      level_collision_damage_points: 50.0,
+      invincible_duration: std::time::Duration::from_millis(8000),
+      immobile_duration: std::time::Duration::from_millis(5000),
+      invincible_blink_periods: 16,
     };
   }
 
   pub fn check_keyboard_state(&mut self, keyboard_state: &sdl2::keyboard::KeyboardState) {
+    if self.immobile { return; }
     let drunk_factor = 1.0;
 
     if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left) {
@@ -140,7 +164,8 @@ impl<'a> Sleigh<'a> {
     }
   }
 
-  pub fn do_logic(&mut self) {
+  pub fn do_logic(&mut self, score: &mut ui::Score, landscape: &mut level::Landscape,
+        level: &mut level::Level) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
@@ -151,15 +176,75 @@ impl<'a> Sleigh<'a> {
         + (seconds_since_last_update * (self.velocity.y as f64)) as f64)
         .max(0.0).min(self.canvas_size.y - self.size.y);
 
-    self.sleigh_frame += seconds_since_last_update * self.frame_speed;
-    self.reindeer_frame = self.sleigh_frame +
-        (self.reindeer_image.total_number_of_frames() as f64) / 2.0;
+    if !self.immobile {
+      self.sleigh_frame += seconds_since_last_update * self.frame_speed;
+      self.reindeer_frame = self.sleigh_frame +
+          (self.reindeer_image.total_number_of_frames() as f64) / 2.0;
+    }
+
+    if self.invincible || self.immobile {
+      if self.invincible {
+        if self.invincible_remaining_duration > now - self.last_update_instant {
+          self.invincible_remaining_duration -= now - self.last_update_instant;
+        } else {
+          self.invincible = false;
+        }
+      }
+
+      if self.immobile {
+        if self.immobile_remaining_duration > now - self.last_update_instant {
+          self.immobile_remaining_duration -= now - self.last_update_instant;
+        } else {
+          self.immobile = false;
+        }
+      }
+    } else if self.collides_with_level(level) {
+      let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
+        0 => self.collided_with_level_sound1,
+        _ => self.collided_with_level_sound2,
+      };
+
+      collided_with_level_sound.play_with_position(level, self.position.x);
+      self.invincible = true;
+      self.immobile = true;
+      self.invincible_remaining_duration = self.invincible_duration;
+      self.immobile_remaining_duration = self.immobile_duration;
+      self.velocity = Point::new(0.0, -self.max_velocity.y);
+      score.add_damage_points(self.level_collision_damage_points);
+      landscape.pause_scrolling(now + self.immobile_duration);
+      level.pause_scrolling(now + self.immobile_duration);
+    }
 
     self.last_update_instant = now;
   }
 
+  fn collides_with_level(&self, level: &level::Level) -> bool {
+    for (tile_x, tile_y) in level.visible_tiles_iter() {
+      let tile_frame = level.background_object_map[tile_y][tile_x];
+      if tile_frame < 0.0 { continue; }
+      let tile_position = Point::new((tile_x as f64) * level.tile_size.x - level.offset_x,
+          (tile_y as f64) * level.tile_size.y);
+
+      if self.sleigh_image.collides(self.position, self.sleigh_frame, level.image,
+            tile_position, tile_frame) || self.reindeer_image.collides(Point::new(
+              self.position.x + self.sleigh_image.width() + self.reindeer_offset.x,
+              self.position.y + self.reindeer_offset.y),
+            self.sleigh_frame, level.image, tile_position, tile_frame) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+    if self.invincible && ((self.invincible_remaining_duration.as_secs_f64()
+            / self.invincible_duration.as_secs_f64())
+          * (self.invincible_blink_periods as f64)) % 1.0 >= 0.5 {
+      return;
+    }
+
     let mut position = self.position;
     self.sleigh_image.draw(canvas, position, self.sleigh_frame);
     position.x += self.sleigh_image.width() + self.reindeer_offset.x;

@@ -10,8 +10,11 @@ use crate::assets::Point;
 
 pub struct Landscape<'a> {
   image: &'a assets::Image<'a>,
+
   offset_x: f64,
+  scrolling_resume_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
+
   size: Point,
   scroll_speed_factor_x: f64,
 }
@@ -24,6 +27,7 @@ pub struct Level<'a> {
 
   pub offset_x: f64,
   pub scroll_speed_x: f64,
+  scrolling_resume_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
   pub tile_size: Point,
@@ -49,8 +53,11 @@ impl<'a> Landscape<'a> {
 
     return Landscape{
       image: image,
+
       offset_x: 0.0,
+      scrolling_resume_instant: std::time::Instant::now(),
       last_update_instant: std::time::Instant::now(),
+
       size: image.size(),
       scroll_speed_factor_x: 0.1,
     };
@@ -61,10 +68,17 @@ impl<'a> Landscape<'a> {
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
     let scroll_speed_x = self.scroll_speed_factor_x * level.scroll_speed_x;
-    self.offset_x = (self.offset_x + seconds_since_last_update * scroll_speed_x) %
-        self.size.x;
+
+    if now > self.scrolling_resume_instant {
+      self.offset_x = (self.offset_x + seconds_since_last_update * scroll_speed_x) %
+          self.size.x;
+    }
 
     self.last_update_instant = now;
+  }
+
+  pub fn pause_scrolling(&mut self, scrolling_resume_instant: std::time::Instant) {
+    self.scrolling_resume_instant = scrolling_resume_instant;
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
@@ -109,11 +123,12 @@ impl<'a> Level<'a> {
 
       offset_x: 0.0,
       scroll_speed_x: 0.0,
+      scrolling_resume_instant: std::time::Instant::now(),
+      last_update_instant: std::time::Instant::now(),
 
       tile_size: tile_size,
       number_of_tiles: (number_of_tiles_x, number_of_tiles_y),
       number_of_visible_tiles_x: (canvas_size.x / tile_size.x + 1.0) as usize,
-      last_update_instant: std::time::Instant::now(),
       min_scroll_speed_x: 40.0,
       max_scroll_speed_x: 160.0,
     };
@@ -145,9 +160,16 @@ impl<'a> Level<'a> {
     self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position.x
         / (self.canvas_size.x - sleigh.size.x)
         * (self.max_scroll_speed_x - self.min_scroll_speed_x);
-    self.offset_x += seconds_since_last_update * self.scroll_speed_x;
+
+    if now > self.scrolling_resume_instant {
+      self.offset_x += seconds_since_last_update * self.scroll_speed_x;
+    }
 
     self.last_update_instant = now;
+  }
+
+  pub fn pause_scrolling(&mut self, scrolling_resume_instant: std::time::Instant) {
+    self.scrolling_resume_instant = scrolling_resume_instant;
   }
 
   pub fn draw_background<RenderTarget: sdl2::render::RenderTarget>(

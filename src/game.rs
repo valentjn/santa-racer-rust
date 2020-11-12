@@ -204,7 +204,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     self.score.do_logic();
     self.landscape.do_logic(&self.level);
     self.level.do_logic(&self.sleigh);
-    self.sleigh.do_logic();
+    self.sleigh.do_logic(&mut self.score, &mut self.landscape, &mut self.level);
 
     let mut i = 0;
 
