@@ -169,9 +169,9 @@ impl<'a> Sleigh<'a> {
   }
 }
 
-impl<'a, 'b> Gift<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, level: &'b level::Level<'a>,
-        sleigh: &'b Sleigh<'a>, canvas_size: Point, difficulty: game::Difficulty) -> Gift<'a> {
+impl<'a> Gift<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, level: &level::Level<'_>,
+        sleigh: &Sleigh<'_>, canvas_size: Point, difficulty: game::Difficulty) -> Gift<'a> {
     let number_of_gift_types = 4;
     let image = asset_library.get_image(format!("gift{}",
         rand::thread_rng().gen_range(1, number_of_gift_types)));
@@ -209,7 +209,7 @@ impl<'a, 'b> Gift<'a> {
     };
   }
 
-  pub fn do_logic(&mut self, level: &'b level::Level<'a>, chimneys: &'b Vec<Chimney>) {
+  pub fn do_logic(&mut self, level: &level::Level<'_>, chimneys: &Vec<Chimney>) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
@@ -238,8 +238,8 @@ impl<'a, 'b> Gift<'a> {
     self.last_update_instant = now;
   }
 
-  fn has_collided_with_chimney(&self, level: &'b level::Level<'a>,
-        chimneys: &'b Vec<Chimney>) -> Option<usize> {
+  fn has_collided_with_chimney(&self, level: &level::Level<'_>,
+        chimneys: &Vec<Chimney>) -> Option<usize> {
     for (tile_x, tile_y) in level.visible_tiles_iter() {
       let frame = level.background_object_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
@@ -274,7 +274,7 @@ impl<'a, 'b> Gift<'a> {
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &'b level::Level<'a>) {
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &level::Level<'_>) {
     let position: Point = Point::new(self.position.x - level.offset_x, self.position.y);
 
     match self.mode {

@@ -54,7 +54,7 @@ pub struct Point {
 
 impl<'a> AssetLibrary<'a> {
   pub fn new(texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
-        options: &'a options::Options) -> AssetLibrary<'a> {
+        options: &options::Options) -> AssetLibrary<'a> {
     let mut data_library: SingleTypeAssetLibrary<Vec<f64>> = SingleTypeAssetLibrary::new();
     let mut image_library: SingleTypeAssetLibrary<Image<'a>> = SingleTypeAssetLibrary::new();
     let mut song_library: SingleTypeAssetLibrary<Song<'a>> = SingleTypeAssetLibrary::new();
