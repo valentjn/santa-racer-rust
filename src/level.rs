@@ -25,6 +25,8 @@ pub struct Level<'a> {
   foreground_object_map: Vec<Vec<f64>>,
   pub canvas_size: Point,
 
+  pub game_mode: game::Mode,
+
   pub offset_x: f64,
   pub scroll_speed_x: f64,
   scrolling_resume_instant: std::time::Instant,
@@ -35,6 +37,7 @@ pub struct Level<'a> {
   number_of_visible_tiles_x: usize,
   min_scroll_speed_x: f64,
   max_scroll_speed_x: f64,
+  menu_scroll_speed_x: f64,
 }
 
 pub struct TileIterator {
@@ -121,6 +124,8 @@ impl<'a> Level<'a> {
       foreground_object_map: foreground_object_map,
       canvas_size: canvas_size,
 
+      game_mode: game::Mode::Menu,
+
       offset_x: 0.0,
       scroll_speed_x: 0.0,
       scrolling_resume_instant: std::time::Instant::now(),
@@ -131,6 +136,7 @@ impl<'a> Level<'a> {
       number_of_visible_tiles_x: (canvas_size.x / tile_size.x + 1.0) as usize,
       min_scroll_speed_x: 40.0,
       max_scroll_speed_x: 160.0,
+      menu_scroll_speed_x: 40.0,
     };
   }
 
@@ -157,9 +163,13 @@ impl<'a> Level<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
-    self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position.x
-        / (self.canvas_size.x - sleigh.size.x)
-        * (self.max_scroll_speed_x - self.min_scroll_speed_x);
+    if self.game_mode == game::Mode::Menu {
+      self.scroll_speed_x = self.menu_scroll_speed_x;
+    } else {
+      self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position.x
+          / (self.canvas_size.x - sleigh.size.x)
+          * (self.max_scroll_speed_x - self.min_scroll_speed_x);
+    }
 
     if now > self.scrolling_resume_instant {
       self.offset_x += seconds_since_last_update * self.scroll_speed_x;

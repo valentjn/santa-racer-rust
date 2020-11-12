@@ -54,7 +54,8 @@ struct DrawArguments<'a: 'b, 'b> {
   fps: f64,
 }
 
-enum Mode {
+#[derive(PartialEq)]
+pub enum Mode {
   Menu,
   HelpPage1,
   HelpPage2,
@@ -84,7 +85,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     asset_library.get_song("music").play();
 
     let font = ui::Font::new(asset_library);
-    let score = ui::Score::new(asset_library);
+    let score = ui::Score::new(asset_library, buffer_size);
     let landscape = level::Landscape::new(asset_library);
     let level = level::Level::new(asset_library, buffer_size);
     let sleigh = fg_objects::Sleigh::new(asset_library, buffer_size, texture_creator);
@@ -107,8 +108,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
       asset_library: asset_library,
 
-      // TODO
-      mode: Mode::Running,
+      mode: Mode::Menu,
       difficulty: Difficulty::Easy,
 
       font: font,

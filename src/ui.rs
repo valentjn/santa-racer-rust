@@ -13,6 +13,9 @@ pub struct Score<'a> {
   gift_image: &'a assets::Image<'a>,
   damage_image: &'a assets::Image<'a>,
   time_image: &'a assets::Image<'a>,
+  canvas_size: assets::Point,
+
+  game_mode: game::Mode,
 
   gift_points: f64,
   damage_points: f64,
@@ -47,13 +50,16 @@ pub enum Alignment {
 }
 
 impl<'a> Score<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Score<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Score<'a> {
     let gift_image = asset_library.get_image("giftScoreIcon");
 
     return Score{
       gift_image: gift_image,
       damage_image: asset_library.get_image("damageScoreIcon"),
       time_image: asset_library.get_image("timeScoreIcon"),
+      canvas_size: canvas_size,
+
+      game_mode: game::Mode::Menu,
 
       gift_points: 0.0,
       damage_points: 0.0,
@@ -93,20 +99,27 @@ impl<'a> Score<'a> {
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &'a Font<'a>) {
-    self.gift_image.draw(canvas, Point::new(self.gift_position_x, 0.0), 0.0);
-    font.draw_monospace(canvas, Point::new(self.gift_position_x + self.margin_x, self.position_y),
-        format!("{}", self.gift_points as i32), Alignment::CenterLeft);
+    if self.game_mode == game::Mode::Menu {
+      font.draw(canvas, Point::zero(), "F1/F2 - Hilfe", Alignment::TopLeft);
+      font.draw(canvas, Point::new(self.canvas_size.x / 2.0, 0.0), "F3 - Highscores",
+          Alignment::TopCenter);
+      font.draw(canvas, Point::new(self.canvas_size.x, 0.0), "F5 - Spielen", Alignment::TopRight);
+    } else {
+      self.gift_image.draw(canvas, Point::new(self.gift_position_x, 0.0), 0.0);
+      font.draw_monospace(canvas, Point::new(self.gift_position_x + self.margin_x,
+          self.position_y), format!("{}", self.gift_points as i32), Alignment::CenterLeft);
 
-    self.damage_image.draw(canvas, Point::new(self.damage_position_x, 0.0), 0.0);
-    font.draw_monospace(canvas, Point::new(self.damage_position_x + self.margin_x, self.position_y),
-        format!("{}", -self.damage_points as i32), Alignment::CenterLeft);
+      self.damage_image.draw(canvas, Point::new(self.damage_position_x, 0.0), 0.0);
+      font.draw_monospace(canvas, Point::new(self.damage_position_x + self.margin_x,
+          self.position_y), format!("{}", -self.damage_points as i32), Alignment::CenterLeft);
 
-    let seconds = self.remaining_duration.as_secs_f64();
-    let minutes = (seconds / 60.0).floor() as i32;
-    let seconds = (seconds % 60.0) as i32;
-    self.time_image.draw(canvas, Point::new(self.time_position_x, 0.0), 0.0);
-    font.draw_monospace(canvas, Point::new(self.time_position_x + self.margin_x, self.position_y),
-        format!("{}:{:02}", minutes, seconds), Alignment::CenterLeft);
+      let seconds = self.remaining_duration.as_secs_f64();
+      let minutes = (seconds / 60.0).floor() as i32;
+      let seconds = (seconds % 60.0) as i32;
+      self.time_image.draw(canvas, Point::new(self.time_position_x, 0.0), 0.0);
+      font.draw_monospace(canvas, Point::new(self.time_position_x + self.margin_x,
+          self.position_y), format!("{}:{:02}", minutes, seconds), Alignment::CenterLeft);
+    }
   }
 }
 
@@ -157,17 +170,16 @@ impl<'a> Font<'a> {
     );
 
     for x in text.chars().zip(text_character_widths.iter()).zip(frames.iter()) {
-      let ((character, character_width), frame) = x;
+      let ((character, &character_width), frame) = x;
       let monospace_offset_x = ((self.max_character_width as f64)
-          - (*character_width as f64)) / 2.0;
+          - (character_width as f64)) / 2.0;
       if monospace { dst_point.x += monospace_offset_x; }
 
       if character != ' ' {
         self.image.draw(canvas, dst_point, *frame as f64);
       }
 
-      dst_point.x += *character_width as f64;
-      if monospace { dst_point.x += monospace_offset_x; }
+      dst_point.x += if monospace { monospace_offset_x } else { character_width as f64 };
     }
   }
 }
