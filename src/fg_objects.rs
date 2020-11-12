@@ -42,6 +42,9 @@ pub struct Gift<'a> {
   points20_image: &'a assets::Image<'a>,
   canvas_size: assets::Point,
 
+  collided_with_chimney_sound: &'a assets::Sound,
+  collided_with_ground_sound: &'a assets::Sound,
+
   pub mode: GiftMode,
 
   pub position: Point,
@@ -64,8 +67,6 @@ pub struct Gift<'a> {
 #[derive(PartialEq)]
 pub enum GiftMode {
   Falling,
-  CollidedWithChimney(f64),
-  CollidedWithGround(f64),
   ShowingPoints(f64),
   CanBeDeleted,
 }
@@ -189,6 +190,9 @@ impl<'a> Gift<'a> {
       points20_image: asset_library.get_image("points20"),
       canvas_size: canvas_size,
 
+      collided_with_chimney_sound: asset_library.get_sound("giftCollidedWithChimney"),
+      collided_with_ground_sound: asset_library.get_sound("giftCollidedWithGround"),
+
       mode: GiftMode::Falling,
 
       position: Point::new(sleigh.position.x + level.offset_x, sleigh.position.y + sleigh.size.y),
@@ -209,7 +213,8 @@ impl<'a> Gift<'a> {
     };
   }
 
-  pub fn do_logic(&mut self, level: &level::Level<'_>, chimneys: &Vec<Chimney>) {
+  pub fn do_logic(&mut self, score: &mut ui::Score<'_>, level: &level::Level<'_>,
+        chimneys: &Vec<Chimney>) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
@@ -224,13 +229,23 @@ impl<'a> Gift<'a> {
         if let Some(chimney_tile_y) = self.has_collided_with_chimney(level, chimneys) {
           let gift_points = if chimney_tile_y <= 1 { 10.0 }
               else if chimney_tile_y == 2 { 15.0 } else { 20.0 };
-          self.mode = GiftMode::CollidedWithChimney(gift_points);
+          self.mode = GiftMode::ShowingPoints(gift_points);
+          self.frame = 0.0;
+          self.collided_with_chimney_sound.play_with_level_position(level, self.position.x);
+          score.add_gift_points(gift_points);
         } else if self.has_collided_with_ground() {
-          self.mode = GiftMode::CollidedWithGround(15.0);
+          self.mode = GiftMode::CanBeDeleted;
+          self.collided_with_ground_sound.play_with_level_position(level, self.position.x);
+          score.add_damage_points(15.0);
         }
       },
       GiftMode::ShowingPoints(_) => {
         self.frame += seconds_since_last_update * self.showing_points_frame_speed;
+
+        if self.frame >= self.star3_frame_offset
+              + (self.star_image.total_number_of_frames() as f64) {
+          self.mode = GiftMode::CanBeDeleted;
+        }
       },
       _ => {},
     }
@@ -262,15 +277,6 @@ impl<'a> Gift<'a> {
 
   fn has_collided_with_ground(&self) -> bool {
     return self.position.y >= self.canvas_size.y;
-  }
-
-  pub fn show_points(&mut self, gift_points: f64) {
-    self.mode = GiftMode::ShowingPoints(gift_points);
-    self.frame = 0.0;
-  }
-
-  pub fn mark_as_can_be_deleted(&mut self) {
-    self.mode = GiftMode::CanBeDeleted;
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(

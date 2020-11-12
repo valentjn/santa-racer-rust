@@ -400,6 +400,14 @@ impl Sound {
     self.play_with_volume_and_pan(1.0, 0.5);
   }
 
+  pub fn play_with_level_position<'a>(&self, level: &level::Level<'_>, position_x: f64) {
+    self.play_with_position(level, position_x - level.offset_x);
+  }
+
+  pub fn play_with_position<'a>(&self, level: &level::Level<'_>, position_x: f64) {
+    self.play_with_pan(position_x / level.canvas_size.x);
+  }
+
   pub fn play_with_pan(&self, pan: f64) {
     self.play_with_volume_and_pan(1.0, pan);
   }

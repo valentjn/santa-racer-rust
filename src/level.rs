@@ -12,7 +12,7 @@ pub struct Level<'a> {
   image: &'a assets::Image<'a>,
   pub background_object_map: Vec<Vec<f64>>,
   foreground_object_map: Vec<Vec<f64>>,
-  canvas_size: Point,
+  pub canvas_size: Point,
 
   pub offset_x: f64,
   pub scroll_speed_x: f64,
