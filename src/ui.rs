@@ -6,7 +6,6 @@
  */
 
 use crate::*;
-use crate::assets::CloneAsI32Vector;
 use crate::assets::Point;
 
 pub struct Score<'a> {
@@ -32,7 +31,7 @@ pub struct Score<'a> {
 pub struct Font<'a> {
   image: &'a assets::Image<'a>,
   characters: String,
-  character_widths: Vec<i32>,
+  character_rects: Vec<sdl2::rect::Rect>,
   max_character_width: i32,
 }
 
@@ -125,14 +124,49 @@ impl<'a> Score<'a> {
 
 impl<'a> Font<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Font<'a> {
-    let character_widths = asset_library.get_data("fontCharacterWidths").clone_as_i32();
-    let max_character_width: i32 = *character_widths.iter().max().expect(
-        "No elements in character_widths");
+    let image = asset_library.get_image("font");
+    let image_width = image.width() as usize;
+    let image_height = image.height() as usize;
+    let image_surface_width = image_width * (image.total_number_of_frames() as usize);
+    let mask = image.mask();
+    let characters =
+        "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ".to_string();
+    let mut character_rects: Vec<sdl2::rect::Rect> = Vec::new();
+
+    for (frame, character) in characters.chars().enumerate() {
+      if character == ' ' {
+        character_rects.push(sdl2::rect::Rect::new(
+            0, 0, (image_width / 2) as u32, image_height as u32));
+        continue;
+      }
+
+      let mut min_point: Point = Point::new(image_width as f64, image_height as f64);
+      let mut max_point: Point = Point::new(-1.0, -1.0);
+
+      for y in 0 .. image_height {
+        for x in 0 .. image_width {
+          let i = (frame as usize) * image_width + x + y * image_surface_width;
+
+          if mask[i] {
+            min_point.x = min_point.x.min(x as f64);
+            min_point.y = min_point.y.min(y as f64);
+            max_point.x = max_point.x.max(x as f64);
+            max_point.y = max_point.y.max(y as f64);
+          }
+        }
+      }
+
+      character_rects.push(sdl2::rect::Rect::new(min_point.x as i32, 0,
+          (max_point.x - min_point.x + 1.0) as u32, image_height as u32));
+    }
+
+    let max_character_width: i32 = character_rects.iter().max_by(|&x, &y| x.width().cmp(&y.width()))
+        .expect("No elements in character_widths").width() as i32;
 
     return Font{
-      image: asset_library.get_image("font"),
-      characters: "-./0123456789:@ABCDEFGHIJKLMNOPQRSTUVWXYZ_\u{00c4}\u{00d6}\u{00dc} ".to_string(),
-      character_widths: character_widths,
+      image: image,
+      characters: characters,
+      character_rects: character_rects,
       max_character_width: max_character_width,
     };
   }
@@ -158,10 +192,10 @@ impl<'a> Font<'a> {
         || self.characters.chars().position(|y| y == x.to_uppercase().next().unwrap_or('-'))
           .unwrap_or(0)) as i32).collect();
 
-    let text_character_widths: Vec<i32> =
-        frames.iter().map(|&x| self.character_widths[x as usize]).collect();
+    let text_character_rects: Vec<sdl2::rect::Rect> =
+        frames.iter().map(|x| self.character_rects[*x as usize]).collect();
     let text_width: i32 = if monospace { (text.len() as i32) * self.max_character_width }
-        else { text_character_widths.iter().sum() } as i32;
+        else { text_character_rects.iter().map(|x| x.width() as i32).sum() } as i32;
     let text_height = self.image.height();
 
     let mut dst_point = Point::new(
@@ -169,17 +203,18 @@ impl<'a> Font<'a> {
       dst_point.y - (((alignment as i32) / 3) * ((text_height as i32) / 2)) as f64,
     );
 
-    for x in text.chars().zip(text_character_widths.iter()).zip(frames.iter()) {
-      let ((character, &character_width), frame) = x;
+    for ((character, character_rect), frame) in
+          text.chars().zip(text_character_rects.iter()).zip(frames.iter()) {
       let monospace_offset_x = ((self.max_character_width as f64)
-          - (character_width as f64)) / 2.0;
+          - (character_rect.width() as f64)) / 2.0;
       if monospace { dst_point.x += monospace_offset_x; }
 
       if character != ' ' {
-        self.image.draw(canvas, dst_point, *frame as f64);
+        self.image.draw_blit(canvas, *character_rect, dst_point, *frame as f64);
       }
 
-      dst_point.x += if monospace { monospace_offset_x } else { character_width as f64 };
+      dst_point.x += character_rect.width() as f64;
+      if monospace { dst_point.x += monospace_offset_x; }
     }
   }
 }

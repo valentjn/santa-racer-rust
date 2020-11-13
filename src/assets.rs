@@ -360,7 +360,7 @@ impl<'a> Image<'a> {
     return self.number_of_frames.0 * self.number_of_frames.1;
   }
 
-  fn mask(&self) -> &Vec<bool> {
+  pub fn mask(&self) -> &Vec<bool> {
     return &self.mask;
   }
 
