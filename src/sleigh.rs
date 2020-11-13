@@ -26,12 +26,15 @@ pub struct Sleigh<'a> {
   acceleration: Point,
   sleigh_frame: f64,
   reindeer_frame: f64,
+  drunk: bool,
   invincible: bool,
   immobile: bool,
   invincible_remaining_duration: std::time::Duration,
   immobile_remaining_duration: std::time::Duration,
   menu_start_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
+
+  stars: Vec<Star<'a>>,
 
   max_velocity: Point,
   reindeer_offset: Point,
@@ -46,6 +49,25 @@ pub struct Sleigh<'a> {
   menu_max_position: Point,
 }
 
+struct Star<'a> {
+  image: &'a assets::Image<'a>,
+  small_image: &'a assets::Image<'a>,
+  drunk_image: &'a assets::Image<'a>,
+  small_drunk_image: &'a assets::Image<'a>,
+
+  position: Point,
+  frame: f64,
+  max_frame: f64,
+  small: bool,
+  drunk: bool,
+  last_update_instant: std::time::Instant,
+
+  min_offset: Point,
+  max_offset: Point,
+  frame_speed: f64,
+  max_max_frame: f64,
+}
+
 impl<'a> Sleigh<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point,
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>) ->
@@ -56,6 +78,11 @@ impl<'a> Sleigh<'a> {
     let size = Point::new(sleigh_image.height() + reindeer_image.height() +
         reindeer_offset.x, sleigh_image.height());
     let now = std::time::Instant::now();
+    let mut stars: Vec<Star<'a>> = Vec::new();
+
+    for _ in 0 .. 67 {
+      stars.push(Star::new(asset_library));
+    }
 
     return Sleigh{
       sleigh_image: sleigh_image,
@@ -73,12 +100,15 @@ impl<'a> Sleigh<'a> {
       acceleration: Point::new(25.0, 25.0),
       sleigh_frame: 0.0,
       reindeer_frame: 0.0,
+      drunk: false,
       invincible: false,
       immobile: false,
       invincible_remaining_duration: std::time::Duration::from_millis(0),
       immobile_remaining_duration: std::time::Duration::from_millis(0),
       menu_start_instant: now,
       last_update_instant: now,
+
+      stars: stars,
 
       max_velocity: Point::new(200.0, 200.0),
       reindeer_offset: reindeer_offset,
@@ -199,6 +229,10 @@ impl<'a> Sleigh<'a> {
       level.pause_scrolling(now + self.immobile_duration);
     }
 
+    for star in &mut self.stars {
+      star.do_logic(self.position, self.size, self.drunk);
+    }
+
     self.last_update_instant = now;
   }
 
@@ -236,5 +270,72 @@ impl<'a> Sleigh<'a> {
     self.reindeer_image.draw(canvas, position, self.reindeer_frame);
     position.x -= self.reindeer_offset.x;
     self.reindeer_image.draw(canvas, position, self.reindeer_frame);
+
+    for star in &self.stars { star.draw(canvas); }
+  }
+}
+
+impl<'a> Star<'a> {
+  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Star<'a> {
+    return Star{
+      image: asset_library.get_image("star"),
+      small_image: asset_library.get_image("smallStar"),
+      drunk_image: asset_library.get_image("drunkStar"),
+      small_drunk_image: asset_library.get_image("smallDrunkStar"),
+
+      position: Point::zero(),
+      frame: -1.0,
+      max_frame: 0.0,
+      small: false,
+      drunk: false,
+      last_update_instant: std::time::Instant::now(),
+
+      min_offset: Point::new(0.0, 0.0),
+      max_offset: Point::new(140.0, 10.0),
+      frame_speed: 34.0,
+      max_max_frame: 30.0,
+    };
+  }
+
+  fn do_logic(&mut self, sleigh_position: Point, sleigh_size: Point, drunk: bool) {
+    if self.frame == -1.0 { self.reset_in_between(sleigh_position, sleigh_size, drunk); }
+
+    let now = std::time::Instant::now();
+    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+
+    self.frame += seconds_since_last_update * self.frame_speed;
+
+    if self.frame >= self.max_max_frame {
+      self.reset_from_beginning(sleigh_position, sleigh_size, drunk);
+    }
+
+    self.last_update_instant = now;
+  }
+
+  fn reset_from_beginning(&mut self, sleigh_position: Point, sleigh_size: Point, drunk: bool) {
+    self.position = Point::new(sleigh_position.x + sleigh_size.x
+        - rand::thread_rng().gen_range(self.min_offset.x, self.max_offset.x),
+        sleigh_position.y + sleigh_size.y
+        - rand::thread_rng().gen_range(self.min_offset.y, self.max_offset.y));
+    self.frame = 0.0;
+    self.max_frame = rand::thread_rng().gen_range(
+        self.image.total_number_of_frames() as f64, self.max_max_frame);
+    self.small = rand::thread_rng().gen_range(0.0, 1.0) >= 0.5;
+    self.drunk = drunk;
+    self.last_update_instant = std::time::Instant::now();
+  }
+
+  fn reset_in_between(&mut self, sleigh_position: Point, sleigh_size: Point, drunk: bool) {
+    self.reset_from_beginning(sleigh_position, sleigh_size, drunk);
+    self.frame = rand::thread_rng().gen_range(0.0, self.max_max_frame);
+  }
+
+  fn draw<RenderTarget: sdl2::render::RenderTarget>(
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+    if self.frame >= self.image.total_number_of_frames() as f64 { return; }
+
+    let image = if self.small { if self.drunk { self.small_drunk_image } else { self.small_image } }
+        else { if self.drunk { self.drunk_image } else { self.image } };
+    image.draw(canvas, self.position, self.frame);
   }
 }
