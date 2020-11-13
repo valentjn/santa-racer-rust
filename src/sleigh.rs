@@ -26,11 +26,15 @@ pub struct Sleigh<'a> {
   acceleration: Point,
   sleigh_frame: f64,
   reindeer_frame: f64,
+  counting_down: bool,
   drunk: bool,
   invincible: bool,
   immobile: bool,
-  invincible_remaining_duration: std::time::Duration,
-  immobile_remaining_duration: std::time::Duration,
+  countdown_counter: i32,
+  invincible_blink: bool,
+  game_start_instant: std::time::Instant,
+  invincible_reset_instant: std::time::Instant,
+  immobile_reset_instant: std::time::Instant,
   menu_start_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
@@ -38,6 +42,7 @@ pub struct Sleigh<'a> {
 
   max_velocity: Point,
   reindeer_offset: Point,
+  countdown_counter_offset_x: f64,
   frame_speed: f64,
   level_collision_damage_points: f64,
   invincible_duration: std::time::Duration,
@@ -47,6 +52,7 @@ pub struct Sleigh<'a> {
   menu_offset_angle: Point,
   menu_min_position: Point,
   menu_max_position: Point,
+  game_start_position: Point,
 }
 
 struct Star<'a> {
@@ -100,11 +106,15 @@ impl<'a> Sleigh<'a> {
       acceleration: Point::new(25.0, 25.0),
       sleigh_frame: 0.0,
       reindeer_frame: 0.0,
+      counting_down: false,
       drunk: false,
       invincible: false,
       immobile: false,
-      invincible_remaining_duration: std::time::Duration::from_millis(0),
-      immobile_remaining_duration: std::time::Duration::from_millis(0),
+      countdown_counter: 0,
+      invincible_blink: false,
+      game_start_instant: now,
+      invincible_reset_instant: now,
+      immobile_reset_instant: now,
       menu_start_instant: now,
       last_update_instant: now,
 
@@ -112,6 +122,7 @@ impl<'a> Sleigh<'a> {
 
       max_velocity: Point::new(200.0, 200.0),
       reindeer_offset: reindeer_offset,
+      countdown_counter_offset_x: -10.0,
       frame_speed: 13.0,
       level_collision_damage_points: 50.0,
       invincible_duration: std::time::Duration::from_millis(8000),
@@ -122,11 +133,33 @@ impl<'a> Sleigh<'a> {
         rand::thread_rng().gen_range(0.0, 2.0 * std::f64::consts::PI)),
       menu_min_position: Point::new(50.0, 50.0),
       menu_max_position: Point::new(450.0, 200.0),
+      game_start_position: Point::new(50.0, 100.0),
     };
   }
 
+  pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
+    self.game_mode = game::Mode::Running;
+    self.position = self.game_start_position;
+    self.counting_down = true;
+    self.drunk = false;
+    self.invincible = false;
+    self.immobile = false;
+    self.game_start_instant = game_start_instant;
+    for star in &mut self.stars { star.reset_in_between(self.position, self.size, self.drunk); }
+  }
+
+  pub fn start_menu(&mut self) {
+    self.game_mode = game::Mode::Menu;
+    self.counting_down = false;
+    self.drunk = false;
+    self.invincible = false;
+    self.immobile = false;
+    self.menu_start_instant = std::time::Instant::now();
+    for star in &mut self.stars { star.frame = -1.0; }
+  }
+
   pub fn check_keyboard_state(&mut self, keyboard_state: &sdl2::keyboard::KeyboardState) {
-    if (self.game_mode == game::Mode::Menu) || self.immobile { return; }
+    if (self.game_mode == game::Mode::Menu) || self.immobile || self.counting_down { return; }
     let drunk_factor = 1.0;
 
     if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left) {
@@ -169,7 +202,9 @@ impl<'a> Sleigh<'a> {
   pub fn do_logic(&mut self, score: &mut ui::Score, landscape: &mut level::Landscape,
         level: &mut level::Level) {
     let now = std::time::Instant::now();
-    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+    let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
+
+    if self.counting_down && (now >= self.game_start_instant) { self.counting_down = false; }
 
     if self.game_mode == game::Mode::Menu {
       let seconds_since_menu_start = now.duration_since(self.menu_start_instant).as_secs_f64();
@@ -181,6 +216,7 @@ impl<'a> Sleigh<'a> {
               * 2.0 * std::f64::consts::PI + self.menu_offset_angle.y) + 1.0)
             * ((self.menu_max_position.y - self.menu_min_position.y) / 2.0)
             + self.menu_min_position.y;
+    } else if self.counting_down {
     } else {
       self.position.x = (self.position.x
           + (seconds_since_last_update * (self.velocity.x as f64)) as f64)
@@ -196,22 +232,10 @@ impl<'a> Sleigh<'a> {
           (self.reindeer_image.total_number_of_frames() as f64) / 2.0;
     }
 
-    if (self.game_mode == game::Mode::Menu) || self.invincible || self.immobile {
-      if self.invincible {
-        if self.invincible_remaining_duration > now - self.last_update_instant {
-          self.invincible_remaining_duration -= now - self.last_update_instant;
-        } else {
-          self.invincible = false;
-        }
-      }
-
-      if self.immobile {
-        if self.immobile_remaining_duration > now - self.last_update_instant {
-          self.immobile_remaining_duration -= now - self.last_update_instant;
-        } else {
-          self.immobile = false;
-        }
-      }
+    if (self.game_mode == game::Mode::Menu) || self.invincible || self.immobile
+          || self.counting_down {
+      if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
+      if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
     } else if self.collides_with_level(level) {
       let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
         0 => self.collided_with_level_sound1,
@@ -221,12 +245,22 @@ impl<'a> Sleigh<'a> {
       collided_with_level_sound.play_with_position(level, self.position.x);
       self.invincible = true;
       self.immobile = true;
-      self.invincible_remaining_duration = self.invincible_duration;
-      self.immobile_remaining_duration = self.immobile_duration;
+      self.invincible_reset_instant = now + self.invincible_duration;
+      self.immobile_reset_instant = now + self.immobile_duration;
       self.velocity = Point::new(0.0, -self.max_velocity.y);
       score.add_damage_points(self.level_collision_damage_points);
       landscape.pause_scrolling(now + self.immobile_duration);
       level.pause_scrolling(now + self.immobile_duration);
+    }
+
+    if self.counting_down {
+      self.countdown_counter = (self.game_start_instant - now).as_secs_f64().ceil() as i32;
+    }
+
+    if self.invincible {
+      self.invincible_blink = (((self.invincible_reset_instant - now).as_secs_f64()
+            / self.invincible_duration.as_secs_f64())
+          * (self.invincible_blink_periods as f64)) % 1.0 >= 0.5;
     }
 
     for star in &mut self.stars {
@@ -256,12 +290,8 @@ impl<'a> Sleigh<'a> {
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
-    if self.invincible && ((self.invincible_remaining_duration.as_secs_f64()
-            / self.invincible_duration.as_secs_f64())
-          * (self.invincible_blink_periods as f64)) % 1.0 >= 0.5 {
-      return;
-    }
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &ui::Font) {
+    if self.invincible_blink { return; }
 
     let mut position = self.position;
     self.sleigh_image.draw(canvas, position, self.sleigh_frame);
@@ -272,6 +302,12 @@ impl<'a> Sleigh<'a> {
     self.reindeer_image.draw(canvas, position, self.reindeer_frame);
 
     for star in &self.stars { star.draw(canvas); }
+
+    if self.counting_down {
+      font.draw(canvas, Point::new(self.position.x + self.countdown_counter_offset_x,
+          self.position.y + self.size.y / 2.0), format!("{}", self.countdown_counter),
+          ui::Alignment::CenterRight);
+    }
   }
 }
 
@@ -301,11 +337,11 @@ impl<'a> Star<'a> {
     if self.frame == -1.0 { self.reset_in_between(sleigh_position, sleigh_size, drunk); }
 
     let now = std::time::Instant::now();
-    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+    let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
     self.frame += seconds_since_last_update * self.frame_speed;
 
-    if self.frame >= self.max_max_frame {
+    if self.frame >= self.max_frame {
       self.reset_from_beginning(sleigh_position, sleigh_size, drunk);
     }
 

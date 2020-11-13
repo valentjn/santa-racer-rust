@@ -102,7 +102,7 @@ impl<'a> Gift<'a> {
   pub fn do_logic(&mut self, score: &mut ui::Score<'_>, level: &level::Level<'_>,
         chimneys: &Vec<Chimney>) {
     let now = std::time::Instant::now();
-    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+    let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
     match self.mode {
       GiftMode::Falling => {

@@ -19,6 +19,7 @@ pub struct Score<'a> {
   gift_points: f64,
   damage_points: f64,
   remaining_duration: std::time::Duration,
+  game_start_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
   gift_position_x: f64,
@@ -51,6 +52,7 @@ pub enum Alignment {
 impl<'a> Score<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Score<'a> {
     let gift_image = asset_library.get_image("giftScoreIcon");
+    let now = std::time::Instant::now();
 
     return Score{
       gift_image: gift_image,
@@ -63,7 +65,8 @@ impl<'a> Score<'a> {
       gift_points: 0.0,
       damage_points: 0.0,
       remaining_duration: std::time::Duration::from_millis(0),
-      last_update_instant: std::time::Instant::now(),
+      game_start_instant: now,
+      last_update_instant: now,
 
       gift_position_x: 0.0,
       damage_position_x: 150.0,
@@ -73,11 +76,17 @@ impl<'a> Score<'a> {
     };
   }
 
-  pub fn reset(&mut self) {
+  pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
+    self.game_mode = game::Mode::Running;
     self.gift_points = 0.0;
     self.damage_points = 0.0;
     self.remaining_duration = std::time::Duration::from_millis(450000);
+    self.game_start_instant = game_start_instant;
     self.last_update_instant = std::time::Instant::now();
+  }
+
+  pub fn start_menu(&mut self) {
+    self.game_mode = game::Mode::Menu;
   }
 
   pub fn add_gift_points(&mut self, gift_points: f64) {
@@ -90,9 +99,13 @@ impl<'a> Score<'a> {
 
   pub fn do_logic(&mut self) {
     let now = std::time::Instant::now();
-    self.remaining_duration -= now - self.last_update_instant;
-    let zero_duration = std::time::Duration::from_millis(0);
-    if self.remaining_duration < zero_duration { self.remaining_duration = zero_duration; }
+
+    if (self.game_mode == game::Mode::Running) && (now >= self.game_start_instant) {
+      self.remaining_duration -= now - self.last_update_instant;
+      let zero_duration = std::time::Duration::from_millis(0);
+      if self.remaining_duration < zero_duration { self.remaining_duration = zero_duration; }
+    }
+
     self.last_update_instant = now;
   }
 

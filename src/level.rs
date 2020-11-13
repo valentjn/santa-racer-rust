@@ -29,6 +29,7 @@ pub struct Level<'a> {
 
   pub offset_x: f64,
   pub scroll_speed_x: f64,
+  game_start_instant: std::time::Instant,
   scrolling_resume_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
@@ -66,9 +67,23 @@ impl<'a> Landscape<'a> {
     };
   }
 
+  pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
+    self.offset_x = 0.0;
+    self.scrolling_resume_instant = game_start_instant;
+  }
+
+  pub fn start_menu(&mut self) {
+    self.offset_x = 0.0;
+    self.scrolling_resume_instant = std::time::Instant::now();
+  }
+
+  pub fn pause_scrolling(&mut self, scrolling_resume_instant: std::time::Instant) {
+    self.scrolling_resume_instant = scrolling_resume_instant;
+  }
+
   pub fn do_logic(&mut self, level: &level::Level) {
     let now = std::time::Instant::now();
-    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+    let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
     let scroll_speed_x = self.scroll_speed_factor_x * level.scroll_speed_x;
 
@@ -78,10 +93,6 @@ impl<'a> Landscape<'a> {
     }
 
     self.last_update_instant = now;
-  }
-
-  pub fn pause_scrolling(&mut self, scrolling_resume_instant: std::time::Instant) {
-    self.scrolling_resume_instant = scrolling_resume_instant;
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
@@ -118,6 +129,8 @@ impl<'a> Level<'a> {
           "Rows of foreground object map do not have equal length");
     }
 
+    let now = std::time::Instant::now();
+
     return Level{
       image: image,
       tile_map: tile_map,
@@ -128,8 +141,9 @@ impl<'a> Level<'a> {
 
       offset_x: 0.0,
       scroll_speed_x: 0.0,
-      scrolling_resume_instant: std::time::Instant::now(),
-      last_update_instant: std::time::Instant::now(),
+      game_start_instant: now,
+      scrolling_resume_instant: now,
+      last_update_instant: now,
 
       tile_size: tile_size,
       number_of_tiles: (number_of_tiles_x, number_of_tiles_y),
@@ -159,9 +173,26 @@ impl<'a> Level<'a> {
     return map;
   }
 
+  pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
+    self.game_mode = game::Mode::Running;
+    self.offset_x = 0.0;
+    self.game_start_instant = game_start_instant;
+    self.scrolling_resume_instant = game_start_instant;
+  }
+
+  pub fn start_menu(&mut self) {
+    self.game_mode = game::Mode::Menu;
+    self.offset_x = 0.0;
+    self.scrolling_resume_instant = std::time::Instant::now();
+  }
+
+  pub fn pause_scrolling(&mut self, scrolling_resume_instant: std::time::Instant) {
+    self.scrolling_resume_instant = scrolling_resume_instant;
+  }
+
   pub fn do_logic(&mut self, sleigh: &sleigh::Sleigh) {
     let now = std::time::Instant::now();
-    let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
+    let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
     if self.game_mode == game::Mode::Menu {
       self.scroll_speed_x = self.menu_scroll_speed_x;
@@ -178,11 +209,7 @@ impl<'a> Level<'a> {
     self.last_update_instant = now;
   }
 
-  pub fn pause_scrolling(&mut self, scrolling_resume_instant: std::time::Instant) {
-    self.scrolling_resume_instant = scrolling_resume_instant;
-  }
-
-  pub fn draw_background<RenderTarget: sdl2::render::RenderTarget>(
+  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
     for (tile_x, tile_y) in self.visible_tiles_iter() {
       let frame = self.tile_map[tile_y][tile_x];

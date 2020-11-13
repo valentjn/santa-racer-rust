@@ -36,8 +36,11 @@ pub struct Game<'a: 'b, 'b> {
   chimneys: Vec<npc::Chimney>,
   gifts: Vec<npc::Gift<'b>>,
 
+  counting_down: bool,
+  game_start_instant: std::time::Instant,
   last_gift_instant: std::time::Instant,
 
+  countdown_duration: std::time::Duration,
   new_gift_wait_duration: std::time::Duration,
 }
 
@@ -91,6 +94,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let sleigh = sleigh::Sleigh::new(asset_library, buffer_size, texture_creator);
     let chimneys = Game::load_chimneys(asset_library);
 
+    let now = std::time::Instant::now();
+
     return Game{
       options: options,
 
@@ -103,8 +108,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       quit_flag: false,
       fps: 0.0,
       frame_counter: 0,
-      last_frame_instant: std::time::Instant::now(),
-      last_fps_update_instant: std::time::Instant::now(),
+      last_frame_instant: now,
+      last_fps_update_instant: now,
 
       asset_library: asset_library,
 
@@ -119,8 +124,11 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       chimneys: chimneys,
       gifts: Vec::new(),
 
-      last_gift_instant: std::time::Instant::now(),
+      counting_down: false,
+      game_start_instant: now,
+      last_gift_instant: now,
 
+      countdown_duration: std::time::Duration::from_millis(3000),
       new_gift_wait_duration: std::time::Duration::from_millis(250),
     };
   }
@@ -143,9 +151,6 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
   }
 
   pub fn run_loop(&mut self) {
-    // TODO
-    self.score.reset();
-
     while !self.quit_flag {
       self.process_events();
       self.check_keyboard_state();
@@ -168,6 +173,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
                 || keymod.contains(sdl2::keyboard::Mod::RCTRLMOD))
                 && (keycode == sdl2::keyboard::Keycode::C) {
             self.quit_flag = true;
+
           } else if (keymod.contains(sdl2::keyboard::Mod::LALTMOD)
                 || keymod.contains(sdl2::keyboard::Mod::RALTMOD))
                 && (keycode == sdl2::keyboard::Keycode::Return) {
@@ -177,8 +183,47 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
             };
             self.canvas.window_mut().set_fullscreen(fullscreen_state).expect(
                 "Could not change fullscreen state");
+
+          } else if (keycode == sdl2::keyboard::Keycode::F1)
+                && ((self.mode == Mode::Menu) || (self.mode == Mode::HelpPage1)
+                  || (self.mode == Mode::HelpPage2)) {
+            self.mode = Mode::HelpPage1;
+
+          } else if (keycode == sdl2::keyboard::Keycode::F2)
+                && ((self.mode == Mode::Menu) || (self.mode == Mode::HelpPage1)
+                  || (self.mode == Mode::HelpPage2)) {
+            self.mode = Mode::HelpPage2;
+
+          } else if (keycode == sdl2::keyboard::Keycode::F5) && (self.mode == Mode::Menu) {
+            self.mode = Mode::Running;
+            self.counting_down = true;
+            self.game_start_instant = now + self.countdown_duration;
+            self.score.start_game(self.game_start_instant);
+            self.landscape.start_game(self.game_start_instant);
+            self.level.start_game(self.game_start_instant);
+            self.sleigh.start_game(self.game_start_instant);
+
+          } else if keycode == sdl2::keyboard::Keycode::Escape {
+            if self.mode == Mode::Menu {
+              self.quit_flag = true;
+            } else if (self.mode == Mode::HelpPage1) || (self.mode == Mode::HelpPage2) {
+              self.mode = Mode::Menu;
+            } else if self.mode == Mode::Running {
+              self.mode = Mode::Menu;
+              self.score.start_menu();
+              self.landscape.start_menu();
+              self.level.start_menu();
+              self.sleigh.start_menu();
+            }
+
+          } else if ((keycode == sdl2::keyboard::Keycode::Escape)
+                  || (keycode == sdl2::keyboard::Keycode::Space))
+                && ((self.mode == Mode::HelpPage1) || (self.mode == Mode::HelpPage2)) {
+            self.mode = Mode::Menu;
+
           } else if (keycode == sdl2::keyboard::Keycode::Space)
-                && (now.duration_since(self.last_gift_instant) >= self.new_gift_wait_duration) {
+                && (self.mode == Mode::Running)
+                && (now - self.last_gift_instant >= self.new_gift_wait_duration) {
             self.gifts.push(npc::Gift::new(
                 self.asset_library, &self.level, &self.sleigh, self.buffer_size, self.difficulty));
             self.last_gift_instant = now;
@@ -272,8 +317,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       },
       Mode::Menu | Mode::Highscores | Mode::Running => {
         draw_arguments.landscape.draw(canvas);
-        draw_arguments.level.draw_background(canvas);
-        draw_arguments.sleigh.draw(canvas);
+        draw_arguments.level.draw(canvas);
+        draw_arguments.sleigh.draw(canvas, draw_arguments.font);
 
         for gift in draw_arguments.gifts.iter() {
           gift.draw(canvas, draw_arguments.level);
@@ -290,7 +335,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
   fn finish_frame(&mut self) {
     let now = std::time::Instant::now();
-    let duration_since_last_fps_update = now.duration_since(self.last_fps_update_instant);
+    let duration_since_last_fps_update = now - self.last_fps_update_instant;
 
     if duration_since_last_fps_update >= std::time::Duration::from_millis(1000) {
       self.fps = (self.frame_counter as f64) / duration_since_last_fps_update.as_secs_f64();
