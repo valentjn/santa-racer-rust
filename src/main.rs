@@ -13,6 +13,7 @@ mod game;
 mod level;
 mod options;
 mod sdl;
+mod sleigh;
 mod ui;
 
 fn main() {

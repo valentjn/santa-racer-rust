@@ -32,7 +32,7 @@ pub struct Game<'a: 'b, 'b> {
   score: ui::Score<'a>,
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
-  sleigh: fg_objects::Sleigh<'a>,
+  sleigh: sleigh::Sleigh<'a>,
   chimneys: Vec<fg_objects::Chimney>,
   gifts: Vec<fg_objects::Gift<'b>>,
 
@@ -49,7 +49,7 @@ struct DrawArguments<'a: 'b, 'b> {
   score: &'a ui::Score<'a>,
   landscape: &'a level::Landscape<'a>,
   level: &'a level::Level<'a>,
-  sleigh: &'a fg_objects::Sleigh<'a>,
+  sleigh: &'a sleigh::Sleigh<'a>,
   gifts: &'b Vec<fg_objects::Gift<'b>>,
   fps: f64,
 }
@@ -88,7 +88,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let score = ui::Score::new(asset_library, buffer_size);
     let landscape = level::Landscape::new(asset_library);
     let level = level::Level::new(asset_library, buffer_size);
-    let sleigh = fg_objects::Sleigh::new(asset_library, buffer_size, texture_creator);
+    let sleigh = sleigh::Sleigh::new(asset_library, buffer_size, texture_creator);
     let chimneys = Game::load_chimneys(asset_library);
 
     return Game{

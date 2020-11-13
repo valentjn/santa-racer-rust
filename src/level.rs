@@ -159,7 +159,7 @@ impl<'a> Level<'a> {
     return map;
   }
 
-  pub fn do_logic(&mut self, sleigh: &fg_objects::Sleigh) {
+  pub fn do_logic(&mut self, sleigh: &sleigh::Sleigh) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = now.duration_since(self.last_update_instant).as_secs_f64();
 
