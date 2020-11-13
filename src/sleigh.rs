@@ -204,7 +204,7 @@ impl<'a> Sleigh<'a> {
 
   fn collides_with_level(&self, level: &level::Level) -> bool {
     for (tile_x, tile_y) in level.visible_tiles_iter() {
-      let tile_frame = level.background_object_map[tile_y][tile_x];
+      let tile_frame = level.tile_map[tile_y][tile_x];
       if tile_frame < 0.0 { continue; }
       let tile_position = Point::new((tile_x as f64) * level.tile_size.x - level.offset_x,
           (tile_y as f64) * level.tile_size.y);

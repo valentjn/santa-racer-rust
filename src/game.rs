@@ -33,8 +33,8 @@ pub struct Game<'a: 'b, 'b> {
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: sleigh::Sleigh<'a>,
-  chimneys: Vec<fg_objects::Chimney>,
-  gifts: Vec<fg_objects::Gift<'b>>,
+  chimneys: Vec<npc::Chimney>,
+  gifts: Vec<npc::Gift<'b>>,
 
   last_gift_instant: std::time::Instant,
 
@@ -50,7 +50,7 @@ struct DrawArguments<'a: 'b, 'b> {
   landscape: &'a level::Landscape<'a>,
   level: &'a level::Level<'a>,
   sleigh: &'a sleigh::Sleigh<'a>,
-  gifts: &'b Vec<fg_objects::Gift<'b>>,
+  gifts: &'b Vec<npc::Gift<'b>>,
   fps: f64,
 }
 
@@ -126,13 +126,13 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
   }
 
   fn load_chimneys(asset_library: &'a assets::AssetLibrary) ->
-        Vec<fg_objects::Chimney> {
+        Vec<npc::Chimney> {
     let data = asset_library.get_data("chimneys");
     let mut chimneys = Vec::new();
     assert!(data.len() % 4 == 0, "Length of chimney hit box data not divisible by 4");
 
     for i in 0 .. data.len() / 4 {
-      chimneys.push(fg_objects::Chimney{
+      chimneys.push(npc::Chimney{
         position: Point::new(data[4 * i], data[4 * i + 1]),
         size: Point::new(data[4 * i + 2], 5.0),
         frame: data[4 * i + 3],
@@ -179,7 +179,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
                 "Could not change fullscreen state");
           } else if (keycode == sdl2::keyboard::Keycode::Space)
                 && (now.duration_since(self.last_gift_instant) >= self.new_gift_wait_duration) {
-            self.gifts.push(fg_objects::Gift::new(
+            self.gifts.push(npc::Gift::new(
                 self.asset_library, &self.level, &self.sleigh, self.buffer_size, self.difficulty));
             self.last_gift_instant = now;
           }
@@ -211,7 +211,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     while i < self.gifts.len() {
       self.gifts[i].do_logic(&mut self.score, &self.level, &self.chimneys);
 
-      if self.gifts[i].mode == fg_objects::GiftMode::CanBeDeleted {
+      if self.gifts[i].mode == npc::GiftMode::CanBeDeleted {
         self.gifts.remove(i);
       } else {
         i += 1;

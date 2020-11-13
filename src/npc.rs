@@ -142,7 +142,7 @@ impl<'a> Gift<'a> {
   fn has_collided_with_chimney(&self, level: &level::Level<'_>,
         chimneys: &Vec<Chimney>) -> Option<usize> {
     for (tile_x, tile_y) in level.visible_tiles_iter() {
-      let frame = level.background_object_map[tile_y][tile_x];
+      let frame = level.tile_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
       let tile_position = Point::new((tile_x as f64) * level.tile_size.x,
           (tile_y as f64) * level.tile_size.y);

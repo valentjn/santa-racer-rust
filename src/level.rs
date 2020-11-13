@@ -21,8 +21,8 @@ pub struct Landscape<'a> {
 
 pub struct Level<'a> {
   pub image: &'a assets::Image<'a>,
-  pub background_object_map: Vec<Vec<f64>>,
-  foreground_object_map: Vec<Vec<f64>>,
+  pub tile_map: Vec<Vec<f64>>,
+  npc_map: Vec<Vec<f64>>,
   pub canvas_size: Point,
 
   pub game_mode: game::Mode,
@@ -99,29 +99,29 @@ impl<'a> Level<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Level {
     let image = asset_library.get_image("level");
     let tile_size = image.size();
-    let background_object_map = Level::convert_data_to_map(
-      asset_library.get_data("backgroundObjectMap").to_vec());
-    let foreground_object_map = Level::convert_data_to_map(
-      asset_library.get_data("foregroundObjectMap").to_vec());
+    let tile_map = Level::convert_data_to_map(
+      asset_library.get_data("levelTileMap").to_vec());
+    let npc_map = Level::convert_data_to_map(
+      asset_library.get_data("levelNpcMap").to_vec());
 
-    assert!(background_object_map.len() == foreground_object_map.len(),
+    assert!(tile_map.len() == npc_map.len(),
         "Lengths of background and foreground object maps are not equal");
-    assert!(background_object_map.len() > 0, "Background object map is empty");
+    assert!(tile_map.len() > 0, "Background object map is empty");
 
-    let number_of_tiles_x = background_object_map[0].len();
-    let number_of_tiles_y = background_object_map.len();
+    let number_of_tiles_x = tile_map[0].len();
+    let number_of_tiles_y = tile_map.len();
 
     for tile_y in 0 .. number_of_tiles_y {
-      assert!(background_object_map[tile_y].len() == number_of_tiles_x,
+      assert!(tile_map[tile_y].len() == number_of_tiles_x,
           "Rows of background object map do not have equal length");
-      assert!(foreground_object_map[tile_y].len() == number_of_tiles_x,
+      assert!(npc_map[tile_y].len() == number_of_tiles_x,
           "Rows of foreground object map do not have equal length");
     }
 
     return Level{
       image: image,
-      background_object_map: background_object_map,
-      foreground_object_map: foreground_object_map,
+      tile_map: tile_map,
+      npc_map: npc_map,
       canvas_size: canvas_size,
 
       game_mode: game::Mode::Menu,
@@ -185,7 +185,7 @@ impl<'a> Level<'a> {
   pub fn draw_background<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
     for (tile_x, tile_y) in self.visible_tiles_iter() {
-      let frame = self.background_object_map[tile_y][tile_x];
+      let frame = self.tile_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
       let dst_point = Point::new((tile_x as f64) * self.tile_size.x - self.offset_x,
           (tile_y as f64) * self.tile_size.y);
@@ -197,7 +197,7 @@ impl<'a> Level<'a> {
     let min_tile_x = (self.offset_x / self.tile_size.x) as usize;
     let max_tile_x = (min_tile_x + self.number_of_visible_tiles_x + 1).min(self.number_of_tiles.0);
     let min_tile_y = 0;
-    let max_tile_y = self.background_object_map.len();
+    let max_tile_y = self.tile_map.len();
 
     return TileIterator {
       tile_x: min_tile_x,

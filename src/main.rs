@@ -8,9 +8,9 @@
 #![allow(dead_code)]
 
 mod assets;
-mod fg_objects;
 mod game;
 mod level;
+mod npc;
 mod options;
 mod sdl;
 mod sleigh;
