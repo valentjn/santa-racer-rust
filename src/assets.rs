@@ -31,7 +31,6 @@ struct SingleTypeAssetLibrary<AssetType> {
 }
 
 pub struct Image<'a> {
-  file_path: std::path::PathBuf,
   surface: sdl2::surface::Surface<'a>,
   texture: sdl2::render::Texture<'a>,
   number_of_frames: (i32, i32),
@@ -188,7 +187,7 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
             Some(number_of_frames) => *number_of_frames,
             None => (1, 1),
           };
-          return Image::new(texture_creator, file_path, number_of_frames, None);
+          return Image::from_file(texture_creator, file_path, number_of_frames, None);
         }, verbose);
   }
 }
@@ -208,27 +207,35 @@ impl SingleTypeAssetLibrary<Sound> {
 }
 
 impl<'a> Image<'a> {
-  fn new(texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+  pub fn new(texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
+        surface: &sdl2::surface::Surface<'_>, number_of_frames: (i32, i32),
+        mask: Option<Vec<bool>>) -> Image<'a> {
+    let mut surface_copy = sdl2::surface::Surface::new(surface.width(), surface.height(),
+        surface.pixel_format_enum()).expect("Could not create surface");
+    surface.blit(None, &mut surface_copy, None).expect("Could not copy surface");
+    let texture = texture_creator.create_texture_from_surface(&surface_copy).expect(
+        "Could not load texture from surface");
+
+    let mask = match mask {
+      Some(mask) => mask,
+      None => Image::mask_from_surface(&surface_copy),
+    };
+
+    return Image {
+      surface: surface_copy,
+      texture: texture,
+      number_of_frames: number_of_frames,
+      mask: mask,
+    };
+  }
+
+  fn from_file(texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         file_path: &std::path::Path, number_of_frames: (i32, i32),
         mask: Option<Vec<bool>>) -> Image<'a> {
     let file_path_str = file_path.to_str().expect("Could not convert path to string");
     let surface = sdl2::image::LoadSurface::from_file(file_path).expect(
         format!("Could not load surface from '{}'", file_path_str).as_str());
-    let texture = texture_creator.create_texture_from_surface(&surface).expect(
-        format!("Could not load texture from '{}'", file_path_str).as_str());
-
-    let mask = match mask {
-      Some(mask) => mask,
-      None => Image::mask_from_surface(&surface),
-    };
-
-    return Image{
-      file_path: file_path.to_path_buf(),
-      surface: surface,
-      texture: texture,
-      number_of_frames: number_of_frames,
-      mask: mask,
-    };
+    return Image::new(texture_creator, &surface, number_of_frames, mask);
   }
 
   fn mask_from_surface(surface: &sdl2::surface::Surface<'a>) -> Vec<bool> {
@@ -255,7 +262,7 @@ impl<'a> Image<'a> {
   pub fn clone(&self,
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>) ->
         Image<'a> {
-    return Image::new(texture_creator, &self.file_path, self.number_of_frames,
+    return Image::new(texture_creator, &self.surface, self.number_of_frames,
         Some(self.mask.to_vec()));
   }
 
