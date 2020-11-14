@@ -29,6 +29,7 @@ pub struct Gift<'a> {
 
   pub mode: GiftMode,
 
+  size: Point,
   pub position: Point,
   velocity: Point,
   acceleration: Point,
@@ -80,6 +81,7 @@ impl<'a> Gift<'a> {
 
       mode: GiftMode::Falling,
 
+      size: image.size(),
       position: Point::new(sleigh.position.x + level.offset_x, sleigh.position.y + sleigh.size.y),
       velocity: velocity,
       acceleration: Point::new(0.0, 200.0),
@@ -141,6 +143,9 @@ impl<'a> Gift<'a> {
 
   fn has_collided_with_chimney(&self, level: &level::Level<'_>,
         chimneys: &Vec<Chimney>) -> Option<usize> {
+    let center_position = Point::new(self.position.x + self.size.x / 2.0,
+        self.position.y + self.size.y / 2.0);
+
     for (tile_x, tile_y) in level.visible_tiles_iter() {
       let frame = level.tile_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
@@ -149,10 +154,10 @@ impl<'a> Gift<'a> {
 
       for chimney in chimneys.iter() {
         if (chimney.frame == frame)
-              && (self.position.x >= tile_position.x + chimney.position.x)
-              && (self.position.x <= tile_position.x + chimney.position.x + chimney.size.x)
-              && (self.position.y >= tile_position.y + chimney.position.y)
-              && (self.position.y <= tile_position.y + chimney.position.y + chimney.size.y) {
+              && (center_position.x >= tile_position.x + chimney.position.x)
+              && (center_position.x <= tile_position.x + chimney.position.x + chimney.size.x)
+              && (center_position.y >= tile_position.y + chimney.position.y)
+              && (center_position.y <= tile_position.y + chimney.position.y + chimney.size.y) {
           return Some(tile_y);
         }
       }
