@@ -29,11 +29,24 @@ pub struct Score<'a> {
   position_y: f64,
 }
 
+pub struct HighscoreTable<'a> {
+  background_image: assets::Image<'a>,
+  canvas_size: assets::Point,
+
+  game_mode: game::Mode,
+
+  size: Point,
+  position: Point,
+  inner_margin: Point,
+  number_of_rows: f64,
+}
+
 pub struct Font<'a> {
   image: &'a assets::Image<'a>,
   characters: String,
   character_rects: Vec<sdl2::rect::Rect>,
   max_character_width: i32,
+  height: f64,
 }
 
 #[derive(Clone, Copy)]
@@ -136,6 +149,67 @@ impl<'a> Score<'a> {
   }
 }
 
+impl<'a> HighscoreTable<'a> {
+  pub fn new(canvas_size: Point,
+        texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>) ->
+        HighscoreTable<'a> {
+    let position = Point::new(50.0, 50.0);
+    let size = Point::new(canvas_size.x - 2.0 * position.x, canvas_size.y - 2.0 * position.y);
+
+    let mut background_surface = sdl2::surface::Surface::new(size.x as u32, size.y as u32,
+        sdl2::pixels::PixelFormatEnum::RGBA32).expect("Could not create surface");
+    background_surface.fill_rect(None, sdl2::pixels::Color::BLACK).expect(
+        "Could not fill surface with color");
+
+    let mut background_image = assets::Image::new(
+        texture_creator, &background_surface, (1, 1), None);
+    background_image.set_alpha(0.5);
+
+    return HighscoreTable{
+      background_image: background_image,
+      canvas_size: canvas_size,
+
+      game_mode: game::Mode::Menu,
+
+      size: size,
+      position: position,
+      inner_margin: Point::new(20.0, 20.0),
+      number_of_rows: 10.0,
+    };
+  }
+
+  pub fn show(&mut self) {
+    self.game_mode = game::Mode::HighscoreTable;
+  }
+
+  pub fn hide(&mut self) {
+    self.game_mode = game::Mode::Menu;
+  }
+
+  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &Font,
+        highscores: &Vec<options::Highscore>) {
+    if (self.game_mode != game::Mode::HighscoreTable)
+        && (self.game_mode != game::Mode::NewHighscore) {
+      return;
+    }
+
+    self.background_image.draw(canvas, self.position, 0.0);
+
+    let inner_height = self.size.y - 2.0 * self.inner_margin.y;
+    let offset_y = (inner_height - font.height) / (self.number_of_rows - 1.0);
+
+    for (i, highscore) in highscores.iter().enumerate() {
+      let mut dst_point = Point::new(self.position.x + self.inner_margin.x,
+          self.position.y + self.inner_margin.y + offset_y * (i as f64));
+      font.draw_monospace(canvas, dst_point, highscore.name.to_string(), Alignment::TopLeft);
+
+      dst_point.x = self.position.x + self.size.x - self.inner_margin.y;
+      font.draw_monospace(canvas, dst_point, highscore.score.to_string(), Alignment::TopRight);
+    }
+  }
+}
+
 impl<'a> Font<'a> {
   pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Font<'a> {
     let image = asset_library.get_image("font");
@@ -182,6 +256,7 @@ impl<'a> Font<'a> {
       characters: characters,
       character_rects: character_rects,
       max_character_width: max_character_width,
+      height: image.height(),
     };
   }
 
@@ -210,11 +285,10 @@ impl<'a> Font<'a> {
         frames.iter().map(|x| self.character_rects[*x as usize]).collect();
     let text_width: i32 = if monospace { (text.len() as i32) * self.max_character_width }
         else { text_character_rects.iter().map(|x| x.width() as i32).sum() } as i32;
-    let text_height = self.image.height();
 
     let mut dst_point = Point::new(
       dst_point.x - (((alignment as i32) % 3) * (text_width / 2)) as f64,
-      dst_point.y - (((alignment as i32) / 3) * ((text_height as i32) / 2)) as f64,
+      dst_point.y - (((alignment as i32) / 3) * ((self.height as i32) / 2)) as f64,
     );
 
     for ((character, character_rect), frame) in

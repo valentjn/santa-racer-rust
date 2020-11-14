@@ -30,6 +30,7 @@ pub struct Game<'a: 'b, 'b> {
 
   font: ui::Font<'a>,
   score: ui::Score<'a>,
+  highscore_table: ui::HighscoreTable<'a>,
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: sleigh::Sleigh<'a>,
@@ -44,10 +45,12 @@ pub struct Game<'a: 'b, 'b> {
 }
 
 struct DrawArguments<'a: 'b, 'b> {
+  options: &'a options::Options,
   buffer_size: Point,
   asset_library: &'a assets::AssetLibrary<'a>,
-  font: &'a ui::Font<'a>,
   mode: &'a Mode,
+  font: &'a ui::Font<'a>,
+  highscore_table: &'a ui::HighscoreTable<'a>,
   score: &'a ui::Score<'a>,
   landscape: &'a level::Landscape<'a>,
   level: &'a level::Level<'a>,
@@ -61,7 +64,7 @@ pub enum Mode {
   Menu,
   HelpPage1,
   HelpPage2,
-  Highscores,
+  HighscoreTable,
   Running,
   Won,
   LostDueToTime,
@@ -86,13 +89,6 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
     asset_library.get_song("music").play();
 
-    let font = ui::Font::new(asset_library);
-    let score = ui::Score::new(asset_library, buffer_size);
-    let landscape = level::Landscape::new(asset_library);
-    let level = level::Level::new(asset_library, buffer_size);
-    let sleigh = sleigh::Sleigh::new(asset_library, buffer_size);
-    let chimneys = Game::load_chimneys(asset_library);
-
     let now = std::time::Instant::now();
 
     return Game{
@@ -115,12 +111,13 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       mode: Mode::Menu,
       difficulty: Difficulty::Easy,
 
-      font: font,
-      score: score,
-      landscape: landscape,
-      level: level,
-      sleigh: sleigh,
-      chimneys: chimneys,
+      font: ui::Font::new(asset_library),
+      score: ui::Score::new(asset_library, buffer_size),
+      highscore_table: ui::HighscoreTable::new(buffer_size, texture_creator),
+      landscape: level::Landscape::new(asset_library),
+      level: level::Level::new(asset_library, buffer_size),
+      sleigh: sleigh::Sleigh::new(asset_library, buffer_size),
+      chimneys: Game::load_chimneys(asset_library),
       gifts: Vec::new(),
 
       counting_down: false,
@@ -184,37 +181,55 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
           } else if (keycode == sdl2::keyboard::Keycode::F1)
                 && ((self.mode == Mode::Menu) || (self.mode == Mode::HelpPage1)
-                  || (self.mode == Mode::HelpPage2)) {
+                  || (self.mode == Mode::HelpPage2) || (self.mode == Mode::HighscoreTable)) {
             self.mode = Mode::HelpPage1;
+            self.highscore_table.hide();
 
           } else if (keycode == sdl2::keyboard::Keycode::F2)
                 && ((self.mode == Mode::Menu) || (self.mode == Mode::HelpPage1)
-                  || (self.mode == Mode::HelpPage2)) {
+                  || (self.mode == Mode::HelpPage2) || (self.mode == Mode::HighscoreTable)) {
             self.mode = Mode::HelpPage2;
+            self.highscore_table.hide();
+
+          } else if (keycode == sdl2::keyboard::Keycode::F3) && (self.mode == Mode::Menu) {
+            self.mode = Mode::HighscoreTable;
+            self.highscore_table.show();
+
+          } else if (keycode == sdl2::keyboard::Keycode::F3)
+                && (self.mode == Mode::HighscoreTable) {
+            self.mode = Mode::Menu;
+            self.highscore_table.hide();
 
           } else if ((keycode == sdl2::keyboard::Keycode::F5)
-                || (keycode == sdl2::keyboard::Keycode::F6)) && (self.mode == Mode::Menu) {
+                  || (keycode == sdl2::keyboard::Keycode::F6))
+                && ((self.mode == Mode::Menu) || (self.mode == Mode::HighscoreTable)) {
             self.mode = Mode::Running;
             self.difficulty = if keycode == sdl2::keyboard::Keycode::F5 { Difficulty::Easy }
                 else { Difficulty::Hard };
             let game_start_instant = now + self.countdown_duration;
             self.counting_down = true;
             self.score.start_game(game_start_instant);
+            self.highscore_table.hide();
             self.landscape.start_game(game_start_instant);
             self.level.start_game(game_start_instant);
             self.sleigh.start_game(game_start_instant);
 
           } else if keycode == sdl2::keyboard::Keycode::Escape {
-            if self.mode == Mode::Menu {
-              self.quit_flag = true;
-            } else if (self.mode == Mode::HelpPage1) || (self.mode == Mode::HelpPage2) {
-              self.mode = Mode::Menu;
-            } else if self.mode == Mode::Running {
-              self.mode = Mode::Menu;
-              self.score.start_menu();
-              self.landscape.start_menu();
-              self.level.start_menu();
-              self.sleigh.start_menu();
+            match self.mode {
+              Mode::Menu | Mode::HighscoreTable => {
+                self.quit_flag = true;
+              },
+              Mode::HelpPage1 | Mode::HelpPage2 => {
+                self.mode = Mode::Menu;
+              },
+              Mode::Running => {
+                self.mode = Mode::Menu;
+                self.score.start_menu();
+                self.landscape.start_menu();
+                self.level.start_menu();
+                self.sleigh.start_menu();
+              },
+              _ => {},
             }
 
           } else if ((keycode == sdl2::keyboard::Keycode::Escape)
@@ -267,11 +282,13 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
   fn draw(&mut self) {
     let draw_arguments = DrawArguments{
+      options: &self.options,
       buffer_size: self.buffer_size,
       asset_library: &self.asset_library,
-      font: &self.font,
       mode: &self.mode,
+      font: &self.font,
       score: &self.score,
+      highscore_table: &self.highscore_table,
       landscape: &self.landscape,
       level: &self.level,
       sleigh: &self.sleigh,
@@ -316,7 +333,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     match draw_arguments.mode {
       Mode::NewHighscore => {
       },
-      Mode::Menu | Mode::Highscores | Mode::Running => {
+      Mode::Menu | Mode::HighscoreTable | Mode::Running => {
         draw_arguments.landscape.draw(canvas);
         draw_arguments.level.draw(canvas);
         draw_arguments.sleigh.draw(canvas, draw_arguments.font);
@@ -326,6 +343,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
         }
 
         draw_arguments.score.draw(canvas, draw_arguments.font);
+        draw_arguments.highscore_table.draw(canvas, draw_arguments.font,
+            &draw_arguments.options.highscores);
       },
       _ => {},
     }

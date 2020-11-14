@@ -53,6 +53,10 @@ impl Options {
       highscores: config_file.highscores,
     };
 
+    for _ in options.highscores.len() .. 10 {
+      options.highscores.push(Highscore::new("Leer", 0));
+    }
+
     for argument in std::env::args().skip(1) {
       if (argument == "-h") || (argument == "--help") {
         print_description();
@@ -86,5 +90,14 @@ impl Options {
     }
 
     return options;
+  }
+}
+
+impl Highscore {
+  pub fn new<S: Into<String>>(name: S, score: i32) -> Highscore {
+    return Highscore{
+      name: name.into(),
+      score: score,
+    };
   }
 }
