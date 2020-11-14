@@ -91,7 +91,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let score = ui::Score::new(asset_library, buffer_size);
     let landscape = level::Landscape::new(asset_library);
     let level = level::Level::new(asset_library, buffer_size);
-    let sleigh = sleigh::Sleigh::new(asset_library, buffer_size, texture_creator);
+    let sleigh = sleigh::Sleigh::new(asset_library, buffer_size);
     let chimneys = Game::load_chimneys(asset_library);
 
     let now = std::time::Instant::now();
