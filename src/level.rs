@@ -5,6 +5,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use rand::Rng;
+
 use crate::*;
 use crate::assets::Point;
 
@@ -25,12 +27,17 @@ pub struct Level<'a> {
   npc_map: Vec<Vec<f64>>,
   pub canvas_size: Point,
 
+  dog_sound: &'a assets::Sound,
+  bell_sound: &'a assets::Sound,
+
   pub game_mode: game::Mode,
 
   pub offset_x: f64,
   pub scroll_speed_x: f64,
   game_start_instant: std::time::Instant,
   scrolling_resume_instant: std::time::Instant,
+  dog_sound_instant: std::time::Instant,
+  bell_sound_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
   pub tile_size: Point,
@@ -39,6 +46,12 @@ pub struct Level<'a> {
   min_scroll_speed_x: f64,
   max_scroll_speed_x: f64,
   menu_scroll_speed_x: f64,
+  dog_sound_volume: f64,
+  bell_sound_volume: f64,
+  min_dog_sound_duration: std::time::Duration,
+  max_dog_sound_duration: std::time::Duration,
+  min_bell_sound_duration: std::time::Duration,
+  max_bell_sound_duration: std::time::Duration,
 }
 
 pub struct TileIterator {
@@ -129,6 +142,10 @@ impl<'a> Level<'a> {
           "Rows of foreground object map do not have equal length");
     }
 
+    let min_dog_sound_duration = std::time::Duration::from_millis(10000);
+    let max_dog_sound_duration = std::time::Duration::from_millis(20000);
+    let min_bell_sound_duration = std::time::Duration::from_millis(10000);
+    let max_bell_sound_duration = std::time::Duration::from_millis(20000);
     let now = std::time::Instant::now();
 
     return Level{
@@ -137,12 +154,19 @@ impl<'a> Level<'a> {
       npc_map: npc_map,
       canvas_size: canvas_size,
 
+      dog_sound: asset_library.get_sound("dog"),
+      bell_sound: asset_library.get_sound("bell"),
+
       game_mode: game::Mode::Menu,
 
       offset_x: 0.0,
       scroll_speed_x: 0.0,
       game_start_instant: now,
       scrolling_resume_instant: now,
+      dog_sound_instant: now + rand::thread_rng().gen_range(
+          min_dog_sound_duration, max_dog_sound_duration),
+      bell_sound_instant: now + rand::thread_rng().gen_range(
+          min_bell_sound_duration, max_bell_sound_duration),
       last_update_instant: now,
 
       tile_size: tile_size,
@@ -151,6 +175,12 @@ impl<'a> Level<'a> {
       min_scroll_speed_x: 40.0,
       max_scroll_speed_x: 160.0,
       menu_scroll_speed_x: 40.0,
+      dog_sound_volume: 0.5,
+      bell_sound_volume: 0.5,
+      min_dog_sound_duration: min_dog_sound_duration,
+      max_dog_sound_duration: max_dog_sound_duration,
+      min_bell_sound_duration: min_bell_sound_duration,
+      max_bell_sound_duration: max_bell_sound_duration,
     };
   }
 
@@ -202,8 +232,20 @@ impl<'a> Level<'a> {
           * (self.max_scroll_speed_x - self.min_scroll_speed_x);
     }
 
-    if now > self.scrolling_resume_instant {
+    if now >= self.scrolling_resume_instant {
       self.offset_x += seconds_since_last_update * self.scroll_speed_x;
+    }
+
+    if now >= self.dog_sound_instant {
+      self.dog_sound.play_with_volume(self.dog_sound_volume);
+      self.dog_sound_instant = now + rand::thread_rng().gen_range(
+          self.min_dog_sound_duration, self.max_dog_sound_duration);
+    }
+
+    if now >= self.bell_sound_instant {
+      self.bell_sound.play_with_volume(self.bell_sound_volume);
+      self.bell_sound_instant = now + rand::thread_rng().gen_range(
+          self.min_bell_sound_duration, self.max_bell_sound_duration);
     }
 
     self.last_update_instant = now;
