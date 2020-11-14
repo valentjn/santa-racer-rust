@@ -372,7 +372,7 @@ impl<'a> Image<'a> {
   }
 
   pub fn set_alpha(&mut self, alpha: f64) {
-    self.texture.set_alpha_mod(((alpha as f64) * 255.0).min(0.0).max(255.0) as u8);
+    self.texture.set_alpha_mod((alpha * 255.0).max(0.0).min(255.0) as u8);
   }
 }
 
