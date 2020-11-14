@@ -194,8 +194,11 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
                   || (self.mode == Mode::HelpPage2)) {
             self.mode = Mode::HelpPage2;
 
-          } else if (keycode == sdl2::keyboard::Keycode::F5) && (self.mode == Mode::Menu) {
+          } else if ((keycode == sdl2::keyboard::Keycode::F5)
+                || (keycode == sdl2::keyboard::Keycode::F6)) && (self.mode == Mode::Menu) {
             self.mode = Mode::Running;
+            self.difficulty = if keycode == sdl2::keyboard::Keycode::F5 { Difficulty::Easy }
+                else { Difficulty::Hard };
             self.counting_down = true;
             self.game_start_instant = now + self.countdown_duration;
             self.score.start_game(self.game_start_instant);

@@ -115,7 +115,8 @@ impl<'a> Score<'a> {
       font.draw(canvas, Point::zero(), "F1/F2 - Hilfe", Alignment::TopLeft);
       font.draw(canvas, Point::new(self.canvas_size.x / 2.0, 0.0), "F3 - Highscores",
           Alignment::TopCenter);
-      font.draw(canvas, Point::new(self.canvas_size.x, 0.0), "F5 - Spielen", Alignment::TopRight);
+      font.draw(canvas, Point::new(self.canvas_size.x, 0.0), "F5/F6 - Spielen",
+          Alignment::TopRight);
     } else {
       self.gift_image.draw(canvas, Point::new(self.gift_position_x, 0.0), 0.0);
       font.draw_monospace(canvas, Point::new(self.gift_position_x + self.margin_x,
