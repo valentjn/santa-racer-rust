@@ -37,7 +37,6 @@ pub struct Game<'a: 'b, 'b> {
   gifts: Vec<npc::Gift<'b>>,
 
   counting_down: bool,
-  game_start_instant: std::time::Instant,
   last_gift_instant: std::time::Instant,
 
   countdown_duration: std::time::Duration,
@@ -125,7 +124,6 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       gifts: Vec::new(),
 
       counting_down: false,
-      game_start_instant: now,
       last_gift_instant: now,
 
       countdown_duration: std::time::Duration::from_millis(3000),
@@ -199,12 +197,12 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
             self.mode = Mode::Running;
             self.difficulty = if keycode == sdl2::keyboard::Keycode::F5 { Difficulty::Easy }
                 else { Difficulty::Hard };
+            let game_start_instant = now + self.countdown_duration;
             self.counting_down = true;
-            self.game_start_instant = now + self.countdown_duration;
-            self.score.start_game(self.game_start_instant);
-            self.landscape.start_game(self.game_start_instant);
-            self.level.start_game(self.game_start_instant);
-            self.sleigh.start_game(self.game_start_instant);
+            self.score.start_game(game_start_instant);
+            self.landscape.start_game(game_start_instant);
+            self.level.start_game(game_start_instant);
+            self.sleigh.start_game(game_start_instant);
 
           } else if keycode == sdl2::keyboard::Keycode::Escape {
             if self.mode == Mode::Menu {
