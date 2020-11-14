@@ -324,8 +324,8 @@ impl<'a> Star<'a> {
       drunk: false,
       last_update_instant: std::time::Instant::now(),
 
-      min_offset: Point::new(0.0, 0.0),
-      max_offset: Point::new(140.0, 10.0),
+      min_offset: Point::new(10.0, 0.0),
+      max_offset: Point::new(150.0, 10.0),
       frame_speed: 34.0,
       max_max_frame: 30.0,
     };
