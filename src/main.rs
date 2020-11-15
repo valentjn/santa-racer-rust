@@ -11,6 +11,7 @@ mod asset;
 mod game;
 mod gift;
 mod level;
+mod npc;
 mod options;
 mod sdl;
 mod sleigh;

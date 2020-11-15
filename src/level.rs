@@ -40,6 +40,8 @@ pub struct Level<'a> {
   bell_sound_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
+  npcs: Vec<Box<dyn npc::Npc + 'a>>,
+
   pub tile_size: Point,
   number_of_tiles: (usize, usize),
   number_of_visible_tiles_x: usize,
@@ -169,6 +171,8 @@ impl<'a> Level<'a> {
           min_bell_sound_duration, max_bell_sound_duration),
       last_update_instant: now,
 
+      npcs: Vec::new(),
+
       tile_size: tile_size,
       number_of_tiles: (number_of_tiles_x, number_of_tiles_y),
       number_of_visible_tiles_x: (canvas_size.x / tile_size.x + 1.0) as usize,
@@ -220,7 +224,7 @@ impl<'a> Level<'a> {
     self.scrolling_resume_instant = scrolling_resume_instant;
   }
 
-  pub fn do_logic(&mut self, sleigh: &sleigh::Sleigh) {
+  pub fn do_logic(&mut self, asset_library: &'a asset::AssetLibrary<'a>, sleigh: &sleigh::Sleigh) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
@@ -248,11 +252,46 @@ impl<'a> Level<'a> {
           self.min_bell_sound_duration, self.max_bell_sound_duration);
     }
 
+    let mut delete_npc: Vec<bool> = vec![true; self.npcs.len()];
+
+    for (tile_x, tile_y) in self.visible_tiles_iter() {
+      let frame = self.npc_map[tile_y][tile_x];
+      if frame < 0.0 { continue; }
+      let tile = (tile_x, tile_y);
+      let mut npc_found = false;
+
+      for (i, npc) in self.npcs.iter().enumerate() {
+        if npc.tile() == tile {
+          npc_found = true;
+          delete_npc[i] = false;
+          break;
+        }
+      }
+
+      if npc_found { continue; }
+      self.npcs.push(npc::new_npc(asset_library, self, tile, frame));
+      delete_npc.push(false);
+    }
+
+    {
+      let mut i = 0;
+
+      while i < self.npcs.len() {
+        if delete_npc[i] {
+          self.npcs.remove(i);
+          delete_npc.remove(i);
+        } else {
+          i += 1;
+        }
+      }
+    }
+
+    for npc in &mut self.npcs { npc.do_logic(); }
+
     self.last_update_instant = now;
   }
 
-  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+  pub fn draw(&self, canvas: &mut sdl2::render::WindowCanvas) {
     for (tile_x, tile_y) in self.visible_tiles_iter() {
       let frame = self.tile_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
@@ -260,11 +299,13 @@ impl<'a> Level<'a> {
           (tile_y as f64) * self.tile_size.y);
       self.image.draw(canvas, dst_point, frame);
     }
+
+    for npc in &self.npcs { npc.draw(canvas, self); }
   }
 
   pub fn visible_tiles_iter(&self) -> TileIterator {
-    let min_tile_x = (self.offset_x / self.tile_size.x) as usize;
-    let max_tile_x = (min_tile_x + self.number_of_visible_tiles_x + 1).min(self.number_of_tiles.0);
+    let min_tile_x = (self.offset_x / self.tile_size.x - 1.0).max(0.0) as usize;
+    let max_tile_x = (min_tile_x + self.number_of_visible_tiles_x + 2).min(self.number_of_tiles.0);
     let min_tile_y = 0;
     let max_tile_y = self.tile_map.len();
 
