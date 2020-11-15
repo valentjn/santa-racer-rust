@@ -286,7 +286,7 @@ impl<'a> Level<'a> {
       }
     }
 
-    for npc in &mut self.npcs { npc.do_logic(); }
+    for npc in &mut self.npcs { npc.do_logic(self.offset_x, sleigh); }
 
     self.last_update_instant = now;
   }

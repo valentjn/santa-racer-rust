@@ -9,7 +9,7 @@ use crate::*;
 use crate::asset::Point;
 
 pub trait Npc {
-  fn do_logic(&mut self);
+  fn do_logic(&mut self, level_offset_x: f64, sleigh: &sleigh::Sleigh);
   fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool;
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level);
 
@@ -18,9 +18,13 @@ pub trait Npc {
 
 struct NpcBase<'a> {
   image: &'a asset::Image<'a>,
+  canvas_size: Point,
+  level_tile_size: Point,
 
   tile: (usize, usize),
   position: Point,
+  velocity: Point,
+  acceleration: Point,
   frame: f64,
   last_update_instant: std::time::Instant,
 
@@ -33,6 +37,7 @@ struct Angel<'a> {
 
 struct Balloon<'a> {
   npc_base: NpcBase<'a>,
+
   balloon_type: BalloonType,
   frame_increasing: bool,
 }
@@ -93,10 +98,14 @@ impl<'a> NpcBase<'a> {
         frame_speed: f64) -> NpcBase<'a> {
     return NpcBase{
       image: image,
+      canvas_size: level.canvas_size,
+      level_tile_size: level.tile_size,
 
       tile: tile,
       position: Point::new(((tile.0 as f64) + 0.5) * level.tile_size.x - image.width() / 2.0,
         ((tile.1 as f64) + 0.5) * level.tile_size.y - image.height() / 2.0),
+      velocity: Point::zero(),
+      acceleration: Point::zero(),
       frame: 0.0,
       last_update_instant: std::time::Instant::now(),
 
@@ -105,10 +114,16 @@ impl<'a> NpcBase<'a> {
   }
 }
 
-impl<'a> Npc for NpcBase<'a> {
+impl<'a> NpcBase<'a> {
   fn do_logic(&mut self) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
+
+    self.velocity.x = self.velocity.x + seconds_since_last_update * self.acceleration.x;
+    self.velocity.y = self.velocity.y + seconds_since_last_update * self.acceleration.y;
+
+    self.position.x = self.position.x + seconds_since_last_update * self.velocity.x;
+    self.position.y = self.position.y + seconds_since_last_update * self.velocity.y;
 
     self.frame += seconds_since_last_update * self.frame_speed;
 
@@ -123,10 +138,6 @@ impl<'a> Npc for NpcBase<'a> {
     self.image.draw(canvas, Point::new(self.position.x - level.offset_x, self.position.y),
         self.frame);
   }
-
-  fn tile(&self) -> (usize, usize) {
-    return self.tile;
-  }
 }
 
 impl<'a> Angel<'a> {
@@ -139,7 +150,7 @@ impl<'a> Angel<'a> {
 }
 
 impl<'a> Npc for Angel<'a> {
-  fn do_logic(&mut self) {
+  fn do_logic(&mut self, _level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
@@ -152,7 +163,7 @@ impl<'a> Npc for Angel<'a> {
   }
 
   fn tile(&self) -> (usize, usize) {
-    return self.npc_base.tile();
+    return self.npc_base.tile;
   }
 }
 
@@ -169,6 +180,7 @@ impl<'a> Balloon<'a> {
 
     return Balloon{
       npc_base: NpcBase::new(image, level, tile, 10.0),
+
       balloon_type: balloon_type,
       frame_increasing: true,
     };
@@ -176,13 +188,21 @@ impl<'a> Balloon<'a> {
 }
 
 impl<'a> Npc for Balloon<'a> {
-  fn do_logic(&mut self) {
+  fn do_logic(&mut self, level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.npc_base.last_update_instant).as_secs_f64();
 
+    if (level_offset_x + self.npc_base.canvas_size.x) / self.npc_base.level_tile_size.x
+          >= self.npc_base.tile.0 as f64 {
+      self.npc_base.velocity.y = -50.0;
+    }
+
+    let frame = self.npc_base.frame;
+    self.npc_base.do_logic();
+
     let number_of_frames = self.npc_base.image.total_number_of_frames() as f64;
     let sign = if self.frame_increasing { 1.0 } else { -1.0 };
-    self.npc_base.frame += sign * seconds_since_last_update * self.npc_base.frame_speed;
+    self.npc_base.frame = frame + sign * seconds_since_last_update * self.npc_base.frame_speed;
 
     while (self.npc_base.frame < 0.0) || (self.npc_base.frame > number_of_frames) {
       self.npc_base.frame = if self.npc_base.frame < 0.0 { -self.npc_base.frame }
@@ -202,7 +222,7 @@ impl<'a> Npc for Balloon<'a> {
   }
 
   fn tile(&self) -> (usize, usize) {
-    return self.npc_base.tile();
+    return self.npc_base.tile;
   }
 }
 
@@ -216,7 +236,7 @@ impl<'a> Cloud<'a> {
 }
 
 impl<'a> Npc for Cloud<'a> {
-  fn do_logic(&mut self) {
+  fn do_logic(&mut self, _level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
@@ -229,7 +249,7 @@ impl<'a> Npc for Cloud<'a> {
   }
 
   fn tile(&self) -> (usize, usize) {
-    return self.npc_base.tile();
+    return self.npc_base.tile;
   }
 }
 
@@ -243,7 +263,7 @@ impl<'a> Finish<'a> {
 }
 
 impl<'a> Npc for Finish<'a> {
-  fn do_logic(&mut self) {
+  fn do_logic(&mut self, level_offset_x: f64, sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
@@ -256,7 +276,7 @@ impl<'a> Npc for Finish<'a> {
   }
 
   fn tile(&self) -> (usize, usize) {
-    return self.npc_base.tile();
+    return self.npc_base.tile;
   }
 }
 
@@ -270,7 +290,7 @@ impl<'a> Goblin<'a> {
 }
 
 impl<'a> Npc for Goblin<'a> {
-  fn do_logic(&mut self) {
+  fn do_logic(&mut self, level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
@@ -283,7 +303,7 @@ impl<'a> Npc for Goblin<'a> {
   }
 
   fn tile(&self) -> (usize, usize) {
-    return self.npc_base.tile();
+    return self.npc_base.tile;
   }
 }
 
@@ -297,7 +317,7 @@ impl<'a> Snowman<'a> {
 }
 
 impl<'a> Npc for Snowman<'a> {
-  fn do_logic(&mut self) {
+  fn do_logic(&mut self, level_offset_x: f64, sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
@@ -310,6 +330,6 @@ impl<'a> Npc for Snowman<'a> {
   }
 
   fn tile(&self) -> (usize, usize) {
-    return self.npc_base.tile();
+    return self.npc_base.tile;
   }
 }
