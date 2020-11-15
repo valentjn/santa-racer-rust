@@ -177,7 +177,7 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
     numbers_of_frames.insert("snowman", (8, 1));
     numbers_of_frames.insert("smallStar", (17, 1));
     numbers_of_frames.insert("star", (17, 1));
-    numbers_of_frames.insert("wineBalloon", (7, 1));
+    numbers_of_frames.insert("wineBalloon", (8, 1));
 
     self.load_assets_from_path(std::path::Path::new("./assets/images"), "png",
         |file_path| {
