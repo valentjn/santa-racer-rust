@@ -208,7 +208,7 @@ impl SingleTypeAssetLibrary<Sound> {
 
 impl<'a> Image<'a> {
   pub fn new(texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
-        surface: &sdl2::surface::Surface<'_>, number_of_frames: (i32, i32),
+        surface: &sdl2::surface::Surface, number_of_frames: (i32, i32),
         mask: Option<Vec<bool>>) -> Image<'a> {
     let mut surface_copy = sdl2::surface::Surface::new(surface.width(), surface.height(),
         surface.pixel_format_enum()).expect("Could not create surface");
@@ -413,11 +413,11 @@ impl Sound {
     self.play_with_volume_and_pan(1.0, 0.5);
   }
 
-  pub fn play_with_level_position<'a>(&self, level: &level::Level<'_>, position_x: f64) {
+  pub fn play_with_level_position<'a>(&self, level: &level::Level, position_x: f64) {
     self.play_with_position(level, position_x - level.offset_x);
   }
 
-  pub fn play_with_position<'a>(&self, level: &level::Level<'_>, position_x: f64) {
+  pub fn play_with_position<'a>(&self, level: &level::Level, position_x: f64) {
     self.play_with_pan(position_x / level.canvas_size.x);
   }
 

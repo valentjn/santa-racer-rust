@@ -56,8 +56,8 @@ pub enum GiftMode {
 }
 
 impl<'a> Gift<'a> {
-  pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level<'_>,
-        sleigh: &sleigh::Sleigh<'_>, canvas_size: Point, difficulty: game::GameDifficulty) -> Gift<'a> {
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
+        sleigh: &sleigh::Sleigh, canvas_size: Point, difficulty: game::GameDifficulty) -> Gift<'a> {
     let number_of_gift_types = 4;
     let image = asset_library.get_image(format!("gift{}",
         rand::thread_rng().gen_range(1, number_of_gift_types)));
@@ -101,7 +101,7 @@ impl<'a> Gift<'a> {
     };
   }
 
-  pub fn do_logic(&mut self, score: &mut ui::Score<'_>, level: &level::Level<'_>,
+  pub fn do_logic(&mut self, score: &mut ui::Score, level: &level::Level,
         chimneys: &Vec<Chimney>) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
@@ -141,7 +141,7 @@ impl<'a> Gift<'a> {
     self.last_update_instant = now;
   }
 
-  fn has_collided_with_chimney(&self, level: &level::Level<'_>,
+  fn has_collided_with_chimney(&self, level: &level::Level,
         chimneys: &Vec<Chimney>) -> Option<usize> {
     let center_position = Point::new(self.position.x + self.size.x / 2.0,
         self.position.y + self.size.y / 2.0);
