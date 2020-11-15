@@ -292,12 +292,19 @@ impl<'a> Level<'a> {
       }
     }
 
+    self.npcs.sort_unstable_by(|x, y| x.z_order().partial_cmp(&y.z_order()).expect(
+        "Could not compare NPC z-orders"));
+
     for npc in &mut self.npcs { npc.do_logic(self.offset_x, sleigh); }
 
     self.last_update_instant = now;
   }
 
   pub fn draw(&self, canvas: &mut sdl2::render::WindowCanvas) {
+    for npc in &self.npcs {
+      if npc.z_order() < 0.0 { npc.draw(canvas, self); }
+    }
+
     for (tile_x, tile_y) in self.visible_tiles_iter() {
       let frame = self.tile_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
@@ -306,7 +313,9 @@ impl<'a> Level<'a> {
       self.image.draw(canvas, dst_point, frame);
     }
 
-    for npc in &self.npcs { npc.draw(canvas, self); }
+    for npc in &self.npcs {
+      if npc.z_order() >= 0.0 { npc.draw(canvas, self); }
+    }
   }
 
   pub fn visible_tiles_iter(&self) -> TileIterator {

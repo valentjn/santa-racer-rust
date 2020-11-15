@@ -14,6 +14,7 @@ pub trait Npc {
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level);
 
   fn tile(&self) -> (usize, usize);
+  fn z_order(&self) -> f64;
 }
 
 struct NpcBase<'a> {
@@ -165,6 +166,10 @@ impl<'a> Npc for Angel<'a> {
   fn tile(&self) -> (usize, usize) {
     return self.npc_base.tile;
   }
+
+  fn z_order(&self) -> f64 {
+    return 0.0;
+  }
 }
 
 impl<'a> Balloon<'a> {
@@ -224,6 +229,10 @@ impl<'a> Npc for Balloon<'a> {
   fn tile(&self) -> (usize, usize) {
     return self.npc_base.tile;
   }
+
+  fn z_order(&self) -> f64 {
+    return -1.0;
+  }
 }
 
 impl<'a> Cloud<'a> {
@@ -251,6 +260,10 @@ impl<'a> Npc for Cloud<'a> {
   fn tile(&self) -> (usize, usize) {
     return self.npc_base.tile;
   }
+
+  fn z_order(&self) -> f64 {
+    return 1.0;
+  }
 }
 
 impl<'a> Finish<'a> {
@@ -259,6 +272,10 @@ impl<'a> Finish<'a> {
     return Finish{
       npc_base: NpcBase::new(asset_library.get_image("finish"), level, tile, 0.0),
     };
+  }
+
+  fn z_order(&self) -> f64 {
+    return 0.0;
   }
 }
 
@@ -277,6 +294,10 @@ impl<'a> Npc for Finish<'a> {
 
   fn tile(&self) -> (usize, usize) {
     return self.npc_base.tile;
+  }
+
+  fn z_order(&self) -> f64 {
+    return 0.0;
   }
 }
 
@@ -305,6 +326,10 @@ impl<'a> Npc for Goblin<'a> {
   fn tile(&self) -> (usize, usize) {
     return self.npc_base.tile;
   }
+
+  fn z_order(&self) -> f64 {
+    return 0.0;
+  }
 }
 
 impl<'a> Snowman<'a> {
@@ -331,5 +356,9 @@ impl<'a> Npc for Snowman<'a> {
 
   fn tile(&self) -> (usize, usize) {
     return self.npc_base.tile;
+  }
+
+  fn z_order(&self) -> f64 {
+    return 0.0;
   }
 }
