@@ -377,7 +377,7 @@ impl<'a> Image<'a> {
 }
 
 impl<'a> Song<'a> {
-  const NONE: assets::Song<'a> = Song{
+  const NONE: asset::Song<'a> = Song{
     music: None,
   };
 
@@ -396,7 +396,7 @@ impl<'a> Song<'a> {
 }
 
 impl Sound {
-  const NONE: assets::Sound = Sound{
+  const NONE: asset::Sound = Sound{
     chunk: None,
   };
 

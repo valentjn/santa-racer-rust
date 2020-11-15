@@ -8,7 +8,7 @@
 use rand::Rng;
 
 use crate::*;
-use crate::assets::Point;
+use crate::asset::Point;
 
 pub struct Chimney {
   pub position: Point,
@@ -17,15 +17,15 @@ pub struct Chimney {
 }
 
 pub struct Gift<'a> {
-  image: &'a assets::Image<'a>,
-  star_image: &'a assets::Image<'a>,
-  points10_image: &'a assets::Image<'a>,
-  points15_image: &'a assets::Image<'a>,
-  points20_image: &'a assets::Image<'a>,
-  canvas_size: assets::Point,
+  image: &'a asset::Image<'a>,
+  star_image: &'a asset::Image<'a>,
+  points10_image: &'a asset::Image<'a>,
+  points15_image: &'a asset::Image<'a>,
+  points20_image: &'a asset::Image<'a>,
+  canvas_size: asset::Point,
 
-  collided_with_chimney_sound: &'a assets::Sound,
-  collided_with_ground_sound: &'a assets::Sound,
+  collided_with_chimney_sound: &'a asset::Sound,
+  collided_with_ground_sound: &'a asset::Sound,
 
   pub mode: GiftMode,
 
@@ -56,7 +56,7 @@ pub enum GiftMode {
 }
 
 impl<'a> Gift<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, level: &level::Level<'_>,
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level<'_>,
         sleigh: &sleigh::Sleigh<'_>, canvas_size: Point, difficulty: game::Difficulty) -> Gift<'a> {
     let number_of_gift_types = 4;
     let image = asset_library.get_image(format!("gift{}",

@@ -6,13 +6,13 @@
  */
 
 use crate::*;
-use crate::assets::Point;
+use crate::asset::Point;
 
 pub struct Score<'a> {
-  gift_image: &'a assets::Image<'a>,
-  damage_image: &'a assets::Image<'a>,
-  time_image: &'a assets::Image<'a>,
-  canvas_size: assets::Point,
+  gift_image: &'a asset::Image<'a>,
+  damage_image: &'a asset::Image<'a>,
+  time_image: &'a asset::Image<'a>,
+  canvas_size: asset::Point,
 
   game_mode: game::Mode,
 
@@ -30,8 +30,8 @@ pub struct Score<'a> {
 }
 
 pub struct HighscoreTable<'a> {
-  background_image: assets::Image<'a>,
-  canvas_size: assets::Point,
+  background_image: asset::Image<'a>,
+  canvas_size: asset::Point,
 
   game_mode: game::Mode,
 
@@ -42,7 +42,7 @@ pub struct HighscoreTable<'a> {
 }
 
 pub struct Font<'a> {
-  image: &'a assets::Image<'a>,
+  image: &'a asset::Image<'a>,
   characters: String,
   character_rects: Vec<sdl2::rect::Rect>,
   max_character_width: i32,
@@ -63,7 +63,7 @@ pub enum Alignment {
 }
 
 impl<'a> Score<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Score<'a> {
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>, canvas_size: Point) -> Score<'a> {
     let gift_image = asset_library.get_image("giftScoreIcon");
     let now = std::time::Instant::now();
 
@@ -161,7 +161,7 @@ impl<'a> HighscoreTable<'a> {
     background_surface.fill_rect(None, sdl2::pixels::Color::BLACK).expect(
         "Could not fill surface with color");
 
-    let mut background_image = assets::Image::new(
+    let mut background_image = asset::Image::new(
         texture_creator, &background_surface, (1, 1), None);
     background_image.set_alpha(0.5);
 
@@ -211,7 +211,7 @@ impl<'a> HighscoreTable<'a> {
 }
 
 impl<'a> Font<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Font<'a> {
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>) -> Font<'a> {
     let image = asset_library.get_image("font");
     let image_width = image.width() as usize;
     let image_height = image.height() as usize;

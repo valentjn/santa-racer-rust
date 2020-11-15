@@ -6,7 +6,7 @@
  */
 
 use crate::*;
-use crate::assets::Point;
+use crate::asset::Point;
 
 pub struct Game<'a: 'b, 'b> {
   options: &'a options::Options,
@@ -23,7 +23,7 @@ pub struct Game<'a: 'b, 'b> {
   last_frame_instant: std::time::Instant,
   last_fps_update_instant: std::time::Instant,
 
-  asset_library: &'a assets::AssetLibrary<'a>,
+  asset_library: &'a asset::AssetLibrary<'a>,
 
   mode: Mode,
   difficulty: Difficulty,
@@ -47,7 +47,7 @@ pub struct Game<'a: 'b, 'b> {
 struct DrawArguments<'a: 'b, 'b> {
   options: &'a options::Options,
   buffer_size: Point,
-  asset_library: &'a assets::AssetLibrary<'a>,
+  asset_library: &'a asset::AssetLibrary<'a>,
   mode: &'a Mode,
   font: &'a ui::Font<'a>,
   highscore_table: &'a ui::HighscoreTable<'a>,
@@ -82,7 +82,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
   pub fn new(canvas: &'a mut sdl2::render::WindowCanvas,
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         event_pump: &'a mut sdl2::EventPump,
-        asset_library: &'a assets::AssetLibrary, options: &'a options::Options) -> Game<'a, 'b> {
+        asset_library: &'a asset::AssetLibrary, options: &'a options::Options) -> Game<'a, 'b> {
     let buffer_size = Point::new(640.0, 480.0);
     let buffer_texture = texture_creator.create_texture_target(
         None, buffer_size.x as u32, buffer_size.y as u32).expect("Could not create buffer texture");
@@ -128,7 +128,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     };
   }
 
-  fn load_chimneys(asset_library: &'a assets::AssetLibrary) ->
+  fn load_chimneys(asset_library: &'a asset::AssetLibrary) ->
         Vec<npc::Chimney> {
     let data = asset_library.get_data("chimneys");
     let mut chimneys = Vec::new();

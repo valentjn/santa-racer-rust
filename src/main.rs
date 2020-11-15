@@ -7,7 +7,7 @@
 
 #![allow(dead_code)]
 
-mod assets;
+mod asset;
 mod game;
 mod level;
 mod npc;
@@ -21,7 +21,7 @@ fn main() {
 
   let mut sdl_wrapper = sdl::SdlWrapper::new(&options);
 
-  let asset_library = assets::AssetLibrary::new(&sdl_wrapper.texture_creator, &options);
+  let asset_library = asset::AssetLibrary::new(&sdl_wrapper.texture_creator, &options);
 
   let mut game = game::Game::new(&mut sdl_wrapper.canvas, &sdl_wrapper.texture_creator,
       &mut sdl_wrapper.event_pump, &asset_library, &options);

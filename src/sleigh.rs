@@ -8,15 +8,15 @@
 use rand::Rng;
 
 use crate::*;
-use crate::assets::Point;
+use crate::asset::Point;
 
 pub struct Sleigh<'a> {
-  sleigh_image: &'a assets::Image<'a>,
-  reindeer_image: &'a assets::Image<'a>,
-  canvas_size: assets::Point,
+  sleigh_image: &'a asset::Image<'a>,
+  reindeer_image: &'a asset::Image<'a>,
+  canvas_size: asset::Point,
 
-  collided_with_level_sound1: &'a assets::Sound,
-  collided_with_level_sound2: &'a assets::Sound,
+  collided_with_level_sound1: &'a asset::Sound,
+  collided_with_level_sound2: &'a asset::Sound,
 
   pub game_mode: game::Mode,
 
@@ -57,10 +57,10 @@ pub struct Sleigh<'a> {
 }
 
 struct Star<'a> {
-  image: &'a assets::Image<'a>,
-  small_image: &'a assets::Image<'a>,
-  drunk_image: &'a assets::Image<'a>,
-  small_drunk_image: &'a assets::Image<'a>,
+  image: &'a asset::Image<'a>,
+  small_image: &'a asset::Image<'a>,
+  drunk_image: &'a asset::Image<'a>,
+  small_drunk_image: &'a asset::Image<'a>,
 
   position: Point,
   frame: f64,
@@ -76,7 +76,7 @@ struct Star<'a> {
 }
 
 impl<'a> Sleigh<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Sleigh<'a> {
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>, canvas_size: Point) -> Sleigh<'a> {
     let sleigh_image = asset_library.get_image("sleigh");
     let reindeer_image = asset_library.get_image("reindeer");
     let reindeer_offset = Point::new(10.0, 3.0);
@@ -316,7 +316,7 @@ impl<'a> Sleigh<'a> {
 }
 
 impl<'a> Star<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Star<'a> {
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>) -> Star<'a> {
     return Star{
       image: asset_library.get_image("star"),
       small_image: asset_library.get_image("smallStar"),

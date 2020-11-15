@@ -8,10 +8,10 @@
 use rand::Rng;
 
 use crate::*;
-use crate::assets::Point;
+use crate::asset::Point;
 
 pub struct Landscape<'a> {
-  image: &'a assets::Image<'a>,
+  image: &'a asset::Image<'a>,
 
   offset_x: f64,
   scrolling_resume_instant: std::time::Instant,
@@ -22,13 +22,13 @@ pub struct Landscape<'a> {
 }
 
 pub struct Level<'a> {
-  pub image: &'a assets::Image<'a>,
+  pub image: &'a asset::Image<'a>,
   pub tile_map: Vec<Vec<f64>>,
   npc_map: Vec<Vec<f64>>,
   pub canvas_size: Point,
 
-  dog_sound: &'a assets::Sound,
-  bell_sound: &'a assets::Sound,
+  dog_sound: &'a asset::Sound,
+  bell_sound: &'a asset::Sound,
 
   pub game_mode: game::Mode,
 
@@ -65,7 +65,7 @@ pub struct TileIterator {
 }
 
 impl<'a> Landscape<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>) -> Landscape {
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>) -> Landscape {
     let image = asset_library.get_image("landscape");
 
     return Landscape{
@@ -120,7 +120,7 @@ impl<'a> Landscape<'a> {
 }
 
 impl<'a> Level<'a> {
-  pub fn new(asset_library: &'a assets::AssetLibrary<'a>, canvas_size: Point) -> Level {
+  pub fn new(asset_library: &'a asset::AssetLibrary<'a>, canvas_size: Point) -> Level {
     let image = asset_library.get_image("level");
     let tile_size = image.size();
     let tile_map = Level::convert_data_to_map(
