@@ -8,7 +8,7 @@
 use crate::*;
 use crate::asset::Point;
 
-pub struct Game<'a: 'b, 'b> {
+pub struct Game<'a> {
   options: &'a options::Options,
 
   canvas: &'a mut sdl2::render::WindowCanvas,
@@ -34,17 +34,13 @@ pub struct Game<'a: 'b, 'b> {
   landscape: level::Landscape<'a>,
   level: level::Level<'a>,
   sleigh: sleigh::Sleigh<'a>,
-  chimneys: Vec<gift::Chimney>,
-  gifts: Vec<gift::Gift<'b>>,
 
   counting_down: bool,
-  last_gift_instant: std::time::Instant,
 
   countdown_duration: std::time::Duration,
-  new_gift_wait_duration: std::time::Duration,
 }
 
-struct DrawArguments<'a: 'b, 'b> {
+struct DrawArguments<'a> {
   options: &'a options::Options,
   buffer_size: Point,
   asset_library: &'a asset::AssetLibrary<'a>,
@@ -55,7 +51,6 @@ struct DrawArguments<'a: 'b, 'b> {
   landscape: &'a level::Landscape<'a>,
   level: &'a level::Level<'a>,
   sleigh: &'a sleigh::Sleigh<'a>,
-  gifts: &'b Vec<gift::Gift<'b>>,
   fps: f64,
 }
 
@@ -78,11 +73,11 @@ pub enum GameDifficulty {
   Hard,
 }
 
-impl<'a: 'b, 'b> Game<'a, 'b> {
+impl<'a> Game<'a> {
   pub fn new(canvas: &'a mut sdl2::render::WindowCanvas,
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>,
         event_pump: &'a mut sdl2::EventPump,
-        asset_library: &'a asset::AssetLibrary, options: &'a options::Options) -> Game<'a, 'b> {
+        asset_library: &'a asset::AssetLibrary, options: &'a options::Options) -> Game<'a> {
     let buffer_size = Point::new(640.0, 480.0);
     let buffer_texture = texture_creator.create_texture_target(
         None, buffer_size.x as u32, buffer_size.y as u32).expect("Could not create buffer texture");
@@ -117,32 +112,11 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       landscape: level::Landscape::new(asset_library),
       level: level::Level::new(asset_library, buffer_size),
       sleigh: sleigh::Sleigh::new(asset_library, buffer_size),
-      chimneys: Game::load_chimneys(asset_library),
-      gifts: Vec::new(),
 
       counting_down: false,
-      last_gift_instant: now,
 
       countdown_duration: std::time::Duration::from_millis(3000),
-      new_gift_wait_duration: std::time::Duration::from_millis(250),
     };
-  }
-
-  fn load_chimneys(asset_library: &'a asset::AssetLibrary) ->
-        Vec<gift::Chimney> {
-    let data = asset_library.get_data("chimneys");
-    let mut chimneys = Vec::new();
-    assert!(data.len() % 4 == 0, "Length of chimney hit box data not divisible by 4");
-
-    for i in 0 .. data.len() / 4 {
-      chimneys.push(gift::Chimney{
-        position: Point::new(data[4 * i], data[4 * i + 1]),
-        size: Point::new(data[4 * i + 2], 5.0),
-        frame: data[4 * i + 3],
-      });
-    }
-
-    return chimneys;
   }
 
   pub fn run_loop(&mut self) {
@@ -238,11 +212,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
             self.mode = GameMode::Menu;
 
           } else if (keycode == sdl2::keyboard::Keycode::Space)
-                && (self.mode == GameMode::Running)
-                && (now - self.last_gift_instant >= self.new_gift_wait_duration) {
-            self.gifts.push(gift::Gift::new(
-                self.asset_library, &self.level, &self.sleigh, self.buffer_size, self.difficulty));
-            self.last_gift_instant = now;
+                && (self.mode == GameMode::Running) {
+            self.sleigh.drop_gift(self.asset_library, &self.level, self.difficulty);
           }
         },
         _ => {},
@@ -266,18 +237,6 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     self.landscape.do_logic(&self.level);
     self.level.do_logic(&self.sleigh);
     self.sleigh.do_logic(&mut self.score, &mut self.landscape, &mut self.level);
-
-    let mut i = 0;
-
-    while i < self.gifts.len() {
-      self.gifts[i].do_logic(&mut self.score, &self.level, &self.chimneys);
-
-      if self.gifts[i].mode == gift::GiftMode::CanBeDeleted {
-        self.gifts.remove(i);
-      } else {
-        i += 1;
-      }
-    }
   }
 
   fn draw(&mut self) {
@@ -292,7 +251,6 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       landscape: &self.landscape,
       level: &self.level,
       sleigh: &self.sleigh,
-      gifts: &self.gifts,
       fps: self.fps,
     };
 
@@ -336,12 +294,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
       GameMode::Menu | GameMode::HighscoreTable | GameMode::Running => {
         draw_arguments.landscape.draw(canvas);
         draw_arguments.level.draw(canvas);
-        draw_arguments.sleigh.draw(canvas, draw_arguments.font);
-
-        for gift in draw_arguments.gifts.iter() {
-          gift.draw(canvas, draw_arguments.level);
-        }
-
+        draw_arguments.sleigh.draw(canvas, draw_arguments.font, draw_arguments.level);
         draw_arguments.score.draw(canvas, draw_arguments.font);
         draw_arguments.highscore_table.draw(canvas, draw_arguments.font,
             &draw_arguments.options.highscores);

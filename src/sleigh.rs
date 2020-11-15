@@ -33,11 +33,14 @@ pub struct Sleigh<'a> {
   countdown_counter: i32,
   invincible_blink: bool,
   game_start_instant: std::time::Instant,
+  last_gift_instant: std::time::Instant,
   invincible_reset_instant: std::time::Instant,
   immobile_reset_instant: std::time::Instant,
   menu_start_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
+  chimneys: Vec<gift::Chimney>,
+  gifts: Vec<gift::Gift<'a>>,
   stars: Vec<Star<'a>>,
 
   max_velocity: Point,
@@ -46,6 +49,7 @@ pub struct Sleigh<'a> {
   countdown_counter_offset_x: f64,
   frame_speed: f64,
   level_collision_damage_points: f64,
+  new_gift_wait_duration: std::time::Duration,
   invincible_duration: std::time::Duration,
   immobile_duration: std::time::Duration,
   invincible_blink_periods: i32,
@@ -112,11 +116,14 @@ impl<'a> Sleigh<'a> {
       countdown_counter: 0,
       invincible_blink: false,
       game_start_instant: now,
+      last_gift_instant: now,
       invincible_reset_instant: now,
       immobile_reset_instant: now,
       menu_start_instant: now,
       last_update_instant: now,
 
+      chimneys: Sleigh::load_chimneys(asset_library),
+      gifts: Vec::new(),
       stars: stars,
 
       max_velocity: Point::new(200.0, 200.0),
@@ -125,6 +132,7 @@ impl<'a> Sleigh<'a> {
       countdown_counter_offset_x: -10.0,
       frame_speed: 13.0,
       level_collision_damage_points: 50.0,
+      new_gift_wait_duration: std::time::Duration::from_millis(250),
       invincible_duration: std::time::Duration::from_millis(8000),
       immobile_duration: std::time::Duration::from_millis(5000),
       invincible_blink_periods: 16,
@@ -135,6 +143,23 @@ impl<'a> Sleigh<'a> {
       menu_max_position: Point::new(450.0, 200.0),
       game_start_position: Point::new(50.0, 100.0),
     };
+  }
+
+  fn load_chimneys(asset_library: &'a asset::AssetLibrary) ->
+        Vec<gift::Chimney> {
+    let data = asset_library.get_data("chimneys");
+    let mut chimneys = Vec::new();
+    assert!(data.len() % 4 == 0, "Length of chimney hit box data not divisible by 4");
+
+    for i in 0 .. data.len() / 4 {
+      chimneys.push(gift::Chimney{
+        position: Point::new(data[4 * i], data[4 * i + 1]),
+        size: Point::new(data[4 * i + 2], 5.0),
+        frame: data[4 * i + 3],
+      });
+    }
+
+    return chimneys;
   }
 
   pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
@@ -187,6 +212,15 @@ impl<'a> Sleigh<'a> {
   fn update_velocity_y(&mut self, mut sign: f64) {
     if (sign == 0.0) && (self.velocity.y != 0.0) { sign = -self.velocity.y.signum(); }
     self.acceleration.y = sign * self.max_acceleration.y;
+  }
+
+  pub fn drop_gift(&mut self, asset_library: &'a asset::AssetLibrary, level: &level::Level,
+        game_difficulty: game::GameDifficulty) {
+    let now = std::time::Instant::now();
+    if now - self.last_gift_instant < self.new_gift_wait_duration { return; }
+    self.gifts.push(gift::Gift::new(
+        asset_library, level, self, self.canvas_size, game_difficulty));
+    self.last_gift_instant = now;
   }
 
   pub fn do_logic(&mut self, score: &mut ui::Score, landscape: &mut level::Landscape,
@@ -267,6 +301,20 @@ impl<'a> Sleigh<'a> {
           * (self.invincible_blink_periods as f64)) % 1.0 >= 0.5;
     }
 
+    {
+      let mut i = 0;
+
+      while i < self.gifts.len() {
+        self.gifts[i].do_logic(score, level, &self.chimneys);
+
+        if self.gifts[i].mode == gift::GiftMode::CanBeDeleted {
+          self.gifts.remove(i);
+        } else {
+          i += 1;
+        }
+      }
+    }
+
     for star in &mut self.stars {
       star.do_logic(self.position, self.size, self.drunk);
     }
@@ -294,7 +342,8 @@ impl<'a> Sleigh<'a> {
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &ui::Font) {
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &ui::Font,
+        level: &level::Level) {
     if self.invincible_blink { return; }
 
     let mut position = self.position;
@@ -305,6 +354,7 @@ impl<'a> Sleigh<'a> {
     position.x -= self.reindeer_offset.x;
     self.reindeer_image.draw(canvas, position, self.reindeer_frame);
 
+    for gift in &self.gifts { gift.draw(canvas, level); }
     for star in &self.stars { star.draw(canvas); }
 
     if self.counting_down {

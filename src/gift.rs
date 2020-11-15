@@ -171,7 +171,7 @@ impl<'a> Gift<'a> {
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &level::Level<'_>) {
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &level::Level) {
     let position: Point = Point::new(self.position.x - level.offset_x, self.position.y);
 
     match self.mode {
