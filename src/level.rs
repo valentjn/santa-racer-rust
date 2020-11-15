@@ -216,12 +216,14 @@ impl<'a> Level<'a> {
     self.offset_x = self.start_offset_x;
     self.game_start_instant = game_start_instant;
     self.scrolling_resume_instant = game_start_instant;
+    self.npcs.clear();
   }
 
   pub fn start_menu(&mut self) {
     self.game_mode = game::GameMode::Menu;
     self.offset_x = self.start_offset_x;
     self.scrolling_resume_instant = std::time::Instant::now();
+    self.npcs.clear();
   }
 
   pub fn pause_scrolling(&mut self, scrolling_resume_instant: std::time::Instant) {
