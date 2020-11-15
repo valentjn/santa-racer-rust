@@ -29,6 +29,8 @@ pub struct Level<'a> {
 
   dog_sound: &'a asset::Sound,
   bell_sound: &'a asset::Sound,
+  sleigh_collided_with_tile_sound1: &'a asset::Sound,
+  sleigh_collided_with_tile_sound2: &'a asset::Sound,
 
   pub game_mode: game::GameMode,
 
@@ -55,6 +57,7 @@ pub struct Level<'a> {
   max_dog_sound_duration: std::time::Duration,
   min_bell_sound_duration: std::time::Duration,
   max_bell_sound_duration: std::time::Duration,
+  sleigh_collided_with_tile_damage_points: f64,
 }
 
 pub struct TileIterator {
@@ -161,6 +164,8 @@ impl<'a> Level<'a> {
 
       dog_sound: asset_library.get_sound("dog"),
       bell_sound: asset_library.get_sound("bell"),
+      sleigh_collided_with_tile_sound1: asset_library.get_sound("sleighCollidedWithLevelTile1"),
+      sleigh_collided_with_tile_sound2: asset_library.get_sound("sleighCollidedWithLevelTile2"),
 
       game_mode: game::GameMode::Menu,
 
@@ -189,6 +194,7 @@ impl<'a> Level<'a> {
       max_dog_sound_duration: max_dog_sound_duration,
       min_bell_sound_duration: min_bell_sound_duration,
       max_bell_sound_duration: max_bell_sound_duration,
+      sleigh_collided_with_tile_damage_points: 50.0,
     };
   }
 
@@ -230,7 +236,8 @@ impl<'a> Level<'a> {
     self.scrolling_resume_instant = scrolling_resume_instant;
   }
 
-  pub fn do_logic(&mut self, asset_library: &'a asset::AssetLibrary<'a>, sleigh: &sleigh::Sleigh) {
+  pub fn do_logic(&mut self, asset_library: &'a asset::AssetLibrary<'a>, score: &mut ui::Score,
+        landscape: &mut level::Landscape, sleigh: &mut sleigh::Sleigh) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
@@ -256,6 +263,20 @@ impl<'a> Level<'a> {
       self.bell_sound.play_with_volume(self.bell_sound_volume);
       self.bell_sound_instant = now + rand::thread_rng().gen_range(
           self.min_bell_sound_duration, self.max_bell_sound_duration);
+    }
+
+    if (self.game_mode == game::GameMode::Running) && !sleigh.invincible && !sleigh.immobile
+          && !sleigh.counting_down && self.sleigh_collides_with_tile(sleigh) {
+      let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
+        0 => self.sleigh_collided_with_tile_sound1,
+        _ => self.sleigh_collided_with_tile_sound2,
+      };
+
+      collided_with_level_sound.play_with_position(self, sleigh.position.x);
+      sleigh.collide_with_level_tile();
+      score.add_damage_points(self.sleigh_collided_with_tile_damage_points);
+      landscape.pause_scrolling(now + sleigh.immobile_duration);
+      self.pause_scrolling(now + sleigh.immobile_duration);
     }
 
     let mut delete_npc: Vec<bool> = vec![true; self.npcs.len()];
@@ -298,6 +319,18 @@ impl<'a> Level<'a> {
     for npc in &mut self.npcs { npc.do_logic(self.offset_x, sleigh); }
 
     self.last_update_instant = now;
+  }
+
+  fn sleigh_collides_with_tile(&self, sleigh: &sleigh::Sleigh) -> bool {
+    for (tile_x, tile_y) in self.visible_tiles_iter() {
+      let tile_frame = self.tile_map[tile_y][tile_x];
+      if tile_frame < 0.0 { continue; }
+      let tile_position = Point::new((tile_x as f64) * self.tile_size.x - self.offset_x,
+          (tile_y as f64) * self.tile_size.y);
+      if sleigh.collides_with_image(self.image, tile_position, tile_frame) { return true; }
+    }
+
+    return false;
   }
 
   pub fn draw(&self, canvas: &mut sdl2::render::WindowCanvas) {

@@ -235,8 +235,8 @@ impl<'a> Game<'a> {
   fn do_logic(&mut self) {
     self.score.do_logic();
     self.landscape.do_logic(&self.level);
-    self.level.do_logic(self.asset_library, &self.sleigh);
-    self.sleigh.do_logic(&mut self.score, &mut self.landscape, &mut self.level);
+    self.level.do_logic(self.asset_library, &mut self.score, &mut self.landscape, &mut self.sleigh);
+    self.sleigh.do_logic(&mut self.score, &mut self.level);
   }
 
   fn draw(&mut self) {

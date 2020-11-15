@@ -132,7 +132,7 @@ impl<'a> NpcBase<'a> {
   }
 
   fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return false;
+    return sleigh.collides_with_image(self.image, self.position, self.frame);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {

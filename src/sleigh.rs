@@ -15,9 +15,6 @@ pub struct Sleigh<'a> {
   reindeer_image: &'a asset::Image<'a>,
   canvas_size: asset::Point,
 
-  collided_with_level_sound1: &'a asset::Sound,
-  collided_with_level_sound2: &'a asset::Sound,
-
   pub game_mode: game::GameMode,
 
   pub size: Point,
@@ -26,10 +23,10 @@ pub struct Sleigh<'a> {
   acceleration: Point,
   sleigh_frame: f64,
   reindeer_frame: f64,
-  counting_down: bool,
+  pub counting_down: bool,
   drunk: bool,
-  invincible: bool,
-  immobile: bool,
+  pub invincible: bool,
+  pub immobile: bool,
   countdown_counter: i32,
   invincible_blink: bool,
   game_start_instant: std::time::Instant,
@@ -48,10 +45,9 @@ pub struct Sleigh<'a> {
   reindeer_offset: Point,
   countdown_counter_offset_x: f64,
   frame_speed: f64,
-  level_collision_damage_points: f64,
   new_gift_wait_duration: std::time::Duration,
   invincible_duration: std::time::Duration,
-  immobile_duration: std::time::Duration,
+  pub immobile_duration: std::time::Duration,
   invincible_blink_periods: i32,
   menu_period: Point,
   menu_offset_angle: Point,
@@ -98,9 +94,6 @@ impl<'a> Sleigh<'a> {
       reindeer_image: reindeer_image,
       canvas_size: canvas_size,
 
-      collided_with_level_sound1: asset_library.get_sound("sleighCollidedWithLevel1"),
-      collided_with_level_sound2: asset_library.get_sound("sleighCollidedWithLevel2"),
-
       game_mode: game::GameMode::Menu,
 
       size: size,
@@ -131,7 +124,6 @@ impl<'a> Sleigh<'a> {
       reindeer_offset: reindeer_offset,
       countdown_counter_offset_x: -10.0,
       frame_speed: 13.0,
-      level_collision_damage_points: 50.0,
       new_gift_wait_duration: std::time::Duration::from_millis(250),
       invincible_duration: std::time::Duration::from_millis(8000),
       immobile_duration: std::time::Duration::from_millis(5000),
@@ -223,8 +215,7 @@ impl<'a> Sleigh<'a> {
     self.last_gift_instant = now;
   }
 
-  pub fn do_logic(&mut self, score: &mut ui::Score, landscape: &mut level::Landscape,
-        level: &mut level::Level) {
+  pub fn do_logic(&mut self, score: &mut ui::Score, level: &mut level::Level) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
@@ -273,22 +264,6 @@ impl<'a> Sleigh<'a> {
           || self.counting_down {
       if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
       if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
-    } else if self.collides_with_level(level) {
-      let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
-        0 => self.collided_with_level_sound1,
-        _ => self.collided_with_level_sound2,
-      };
-
-      collided_with_level_sound.play_with_position(level, self.position.x);
-      self.invincible = true;
-      self.immobile = true;
-      self.invincible_reset_instant = now + self.invincible_duration;
-      self.immobile_reset_instant = now + self.immobile_duration;
-      self.velocity = Point::new(0.0, -self.max_velocity.y);
-      self.acceleration = Point::zero();
-      score.add_damage_points(self.level_collision_damage_points);
-      landscape.pause_scrolling(now + self.immobile_duration);
-      level.pause_scrolling(now + self.immobile_duration);
     }
 
     if self.counting_down {
@@ -322,23 +297,22 @@ impl<'a> Sleigh<'a> {
     self.last_update_instant = now;
   }
 
-  fn collides_with_level(&self, level: &level::Level) -> bool {
-    for (tile_x, tile_y) in level.visible_tiles_iter() {
-      let tile_frame = level.tile_map[tile_y][tile_x];
-      if tile_frame < 0.0 { continue; }
-      let tile_position = Point::new((tile_x as f64) * level.tile_size.x - level.offset_x,
-          (tile_y as f64) * level.tile_size.y);
+  pub fn collide_with_level_tile(&mut self) {
+    let now = std::time::Instant::now();
+    self.invincible = true;
+    self.immobile = true;
+    self.invincible_reset_instant = now + self.invincible_duration;
+    self.immobile_reset_instant = now + self.immobile_duration;
+    self.velocity = Point::new(0.0, -self.max_velocity.y);
+    self.acceleration = Point::zero();
+  }
 
-      if self.sleigh_image.collides(self.position, self.sleigh_frame, level.image,
-            tile_position, tile_frame) || self.reindeer_image.collides(Point::new(
-              self.position.x + self.sleigh_image.width() + self.reindeer_offset.x,
-              self.position.y + self.reindeer_offset.y),
-            self.sleigh_frame, level.image, tile_position, tile_frame) {
-        return true;
-      }
-    }
-
-    return false;
+  pub fn collides_with_image(&self, image: &asset::Image, position: Point, frame: f64) -> bool {
+    return self.sleigh_image.collides(self.position, self.sleigh_frame, image,
+        position, frame) || self.reindeer_image.collides(Point::new(
+          self.position.x + self.sleigh_image.width() + self.reindeer_offset.x,
+          self.position.y + self.reindeer_offset.y),
+        self.sleigh_frame, image, position, frame);
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
