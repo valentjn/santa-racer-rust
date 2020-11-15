@@ -45,6 +45,7 @@ pub struct Level<'a> {
   pub tile_size: Point,
   number_of_tiles: (usize, usize),
   number_of_visible_tiles_x: usize,
+  start_offset_x: f64,
   min_scroll_speed_x: f64,
   max_scroll_speed_x: f64,
   menu_scroll_speed_x: f64,
@@ -144,6 +145,8 @@ impl<'a> Level<'a> {
           "Rows of foreground object map do not have equal length");
     }
 
+    let start_offset_x = -200.0;
+
     let min_dog_sound_duration = std::time::Duration::from_millis(10000);
     let max_dog_sound_duration = std::time::Duration::from_millis(20000);
     let min_bell_sound_duration = std::time::Duration::from_millis(10000);
@@ -161,7 +164,7 @@ impl<'a> Level<'a> {
 
       game_mode: game::GameMode::Menu,
 
-      offset_x: 0.0,
+      offset_x: start_offset_x,
       scroll_speed_x: 0.0,
       game_start_instant: now,
       scrolling_resume_instant: now,
@@ -176,6 +179,7 @@ impl<'a> Level<'a> {
       tile_size: tile_size,
       number_of_tiles: (number_of_tiles_x, number_of_tiles_y),
       number_of_visible_tiles_x: (canvas_size.x / tile_size.x + 1.0) as usize,
+      start_offset_x: start_offset_x,
       min_scroll_speed_x: 40.0,
       max_scroll_speed_x: 160.0,
       menu_scroll_speed_x: 40.0,
@@ -209,14 +213,14 @@ impl<'a> Level<'a> {
 
   pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
     self.game_mode = game::GameMode::Running;
-    self.offset_x = 0.0;
+    self.offset_x = self.start_offset_x;
     self.game_start_instant = game_start_instant;
     self.scrolling_resume_instant = game_start_instant;
   }
 
   pub fn start_menu(&mut self) {
     self.game_mode = game::GameMode::Menu;
-    self.offset_x = 0.0;
+    self.offset_x = self.start_offset_x;
     self.scrolling_resume_instant = std::time::Instant::now();
   }
 
