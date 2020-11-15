@@ -159,25 +159,25 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
         verbose: bool) {
     let mut numbers_of_frames = std::collections::HashMap::new();
     numbers_of_frames.insert("angel", (13, 1));
-    numbers_of_frames.insert("ballon1", (8, 1));
-    numbers_of_frames.insert("ballon2", (7, 1));
-    numbers_of_frames.insert("ballon3", (8, 1));
-    numbers_of_frames.insert("ballon4", (8, 1));
-    numbers_of_frames.insert("ballon5", (8, 1));
     numbers_of_frames.insert("bigStar", (10, 1));
+    numbers_of_frames.insert("cashBalloon", (8, 1));
     numbers_of_frames.insert("drunkStar", (17, 1));
     numbers_of_frames.insert("font", (45, 1));
     numbers_of_frames.insert("gift1", (15, 1));
     numbers_of_frames.insert("gift2", (15, 1));
     numbers_of_frames.insert("gift3", (15, 1));
+    numbers_of_frames.insert("giftBalloon", (8, 1));
     numbers_of_frames.insert("goblin", (19, 1));
+    numbers_of_frames.insert("heartBalloon", (8, 1));
     numbers_of_frames.insert("level", (1, 81));
     numbers_of_frames.insert("reindeer", (14, 1));
     numbers_of_frames.insert("shield", (8, 1));
+    numbers_of_frames.insert("shieldBalloon", (8, 1));
     numbers_of_frames.insert("sleigh", (14, 1));
     numbers_of_frames.insert("snowman", (8, 1));
     numbers_of_frames.insert("smallStar", (17, 1));
     numbers_of_frames.insert("star", (17, 1));
+    numbers_of_frames.insert("wineBalloon", (7, 1));
 
     self.load_assets_from_path(std::path::Path::new("./assets/images"), "png",
         |file_path| {
