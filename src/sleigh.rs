@@ -41,6 +41,7 @@ pub struct Sleigh<'a> {
   stars: Vec<Star<'a>>,
 
   max_velocity: Point,
+  max_acceleration: Point,
   reindeer_offset: Point,
   countdown_counter_offset_x: f64,
   frame_speed: f64,
@@ -101,7 +102,7 @@ impl<'a> Sleigh<'a> {
       size: size,
       position: Point::zero(),
       velocity: Point::zero(),
-      acceleration: Point::new(25.0, 25.0),
+      acceleration: Point::zero(),
       sleigh_frame: 0.0,
       reindeer_frame: 0.0,
       counting_down: false,
@@ -119,6 +120,7 @@ impl<'a> Sleigh<'a> {
       stars: stars,
 
       max_velocity: Point::new(200.0, 200.0),
+      max_acceleration: Point::new(1000.0, 1000.0),
       reindeer_offset: reindeer_offset,
       countdown_counter_offset_x: -10.0,
       frame_speed: 13.0,
@@ -177,24 +179,14 @@ impl<'a> Sleigh<'a> {
     }
   }
 
-  fn update_velocity_x(&mut self, sign: f64) {
-    self.velocity.x = (self.velocity.x + sign * self.acceleration.x)
-        .max(-self.max_velocity.x).min(self.max_velocity.x);
-
-    if ((self.velocity.x < 0.0) && (self.position.x <= 0.0))
-          || ((self.velocity.x > 0.0) && (self.position.x >= self.canvas_size.x - self.size.x)) {
-      self.velocity.x = 0.0;
-    }
+  fn update_velocity_x(&mut self, mut sign: f64) {
+    if (sign == 0.0) && (self.velocity.x != 0.0) { sign = -self.velocity.x.signum(); }
+    self.acceleration.x = sign * self.max_acceleration.x;
   }
 
-  fn update_velocity_y(&mut self, sign: f64) {
-    self.velocity.y = (self.velocity.y + sign * self.acceleration.y)
-        .max(-self.max_velocity.y).min(self.max_velocity.y);
-
-    if ((self.velocity.y < 0.0) && (self.position.y <= 0.0))
-          || ((self.velocity.y > 0.0) && (self.position.y >= self.canvas_size.y - self.size.y)) {
-      self.velocity.y = 0.0;
-    }
+  fn update_velocity_y(&mut self, mut sign: f64) {
+    if (sign == 0.0) && (self.velocity.y != 0.0) { sign = -self.velocity.y.signum(); }
+    self.acceleration.y = sign * self.max_acceleration.y;
   }
 
   pub fn do_logic(&mut self, score: &mut ui::Score, landscape: &mut level::Landscape,
@@ -216,11 +208,24 @@ impl<'a> Sleigh<'a> {
             + self.menu_min_position.y;
     } else if self.counting_down {
     } else {
-      self.position.x = (self.position.x
-          + (seconds_since_last_update * (self.velocity.x as f64)) as f64)
+      self.velocity.x = (self.velocity.x + seconds_since_last_update * self.acceleration.x)
+          .max(-self.max_velocity.x).min(self.max_velocity.x);
+      self.velocity.y = (self.velocity.y + seconds_since_last_update * self.acceleration.y)
+          .max(-self.max_velocity.y).min(self.max_velocity.y);
+
+      if ((self.velocity.x < 0.0) && (self.position.x <= 0.0))
+            || ((self.velocity.x > 0.0) && (self.position.x >= self.canvas_size.x - self.size.x)) {
+        self.velocity.x = 0.0;
+      }
+
+      if ((self.velocity.y < 0.0) && (self.position.y <= 0.0))
+            || ((self.velocity.y > 0.0) && (self.position.y >= self.canvas_size.y - self.size.y)) {
+        self.velocity.y = 0.0;
+      }
+
+      self.position.x = (self.position.x + seconds_since_last_update * self.velocity.x)
           .max(0.0).min(self.canvas_size.x - self.size.x);
-      self.position.y = (self.position.y
-          + (seconds_since_last_update * (self.velocity.y as f64)) as f64)
+      self.position.y = (self.position.y + seconds_since_last_update * self.velocity.y)
           .max(0.0).min(self.canvas_size.y - self.size.y);
     }
 
@@ -246,6 +251,7 @@ impl<'a> Sleigh<'a> {
       self.invincible_reset_instant = now + self.invincible_duration;
       self.immobile_reset_instant = now + self.immobile_duration;
       self.velocity = Point::new(0.0, -self.max_velocity.y);
+      self.acceleration = Point::zero();
       score.add_damage_points(self.level_collision_damage_points);
       landscape.pause_scrolling(now + self.immobile_duration);
       level.pause_scrolling(now + self.immobile_duration);
