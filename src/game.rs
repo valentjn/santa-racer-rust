@@ -25,8 +25,8 @@ pub struct Game<'a: 'b, 'b> {
 
   asset_library: &'a asset::AssetLibrary<'a>,
 
-  mode: Mode,
-  difficulty: Difficulty,
+  mode: GameMode,
+  difficulty: GameDifficulty,
 
   font: ui::Font<'a>,
   score: ui::Score<'a>,
@@ -48,7 +48,7 @@ struct DrawArguments<'a: 'b, 'b> {
   options: &'a options::Options,
   buffer_size: Point,
   asset_library: &'a asset::AssetLibrary<'a>,
-  mode: &'a Mode,
+  mode: &'a GameMode,
   font: &'a ui::Font<'a>,
   highscore_table: &'a ui::HighscoreTable<'a>,
   score: &'a ui::Score<'a>,
@@ -60,7 +60,7 @@ struct DrawArguments<'a: 'b, 'b> {
 }
 
 #[derive(PartialEq)]
-pub enum Mode {
+pub enum GameMode {
   Menu,
   HelpPage1,
   HelpPage2,
@@ -73,7 +73,7 @@ pub enum Mode {
 }
 
 #[derive(Clone, Copy)]
-pub enum Difficulty {
+pub enum GameDifficulty {
   Easy,
   Hard,
 }
@@ -108,8 +108,8 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
       asset_library: asset_library,
 
-      mode: Mode::Menu,
-      difficulty: Difficulty::Easy,
+      mode: GameMode::Menu,
+      difficulty: GameDifficulty::Easy,
 
       font: ui::Font::new(asset_library),
       score: ui::Score::new(asset_library, buffer_size),
@@ -180,32 +180,32 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
                 "Could not change fullscreen state");
 
           } else if (keycode == sdl2::keyboard::Keycode::F1)
-                && ((self.mode == Mode::Menu) || (self.mode == Mode::HelpPage1)
-                  || (self.mode == Mode::HelpPage2) || (self.mode == Mode::HighscoreTable)) {
-            self.mode = Mode::HelpPage1;
+                && ((self.mode == GameMode::Menu) || (self.mode == GameMode::HelpPage1)
+                  || (self.mode == GameMode::HelpPage2) || (self.mode == GameMode::HighscoreTable)) {
+            self.mode = GameMode::HelpPage1;
             self.highscore_table.hide();
 
           } else if (keycode == sdl2::keyboard::Keycode::F2)
-                && ((self.mode == Mode::Menu) || (self.mode == Mode::HelpPage1)
-                  || (self.mode == Mode::HelpPage2) || (self.mode == Mode::HighscoreTable)) {
-            self.mode = Mode::HelpPage2;
+                && ((self.mode == GameMode::Menu) || (self.mode == GameMode::HelpPage1)
+                  || (self.mode == GameMode::HelpPage2) || (self.mode == GameMode::HighscoreTable)) {
+            self.mode = GameMode::HelpPage2;
             self.highscore_table.hide();
 
-          } else if (keycode == sdl2::keyboard::Keycode::F3) && (self.mode == Mode::Menu) {
-            self.mode = Mode::HighscoreTable;
+          } else if (keycode == sdl2::keyboard::Keycode::F3) && (self.mode == GameMode::Menu) {
+            self.mode = GameMode::HighscoreTable;
             self.highscore_table.show();
 
           } else if (keycode == sdl2::keyboard::Keycode::F3)
-                && (self.mode == Mode::HighscoreTable) {
-            self.mode = Mode::Menu;
+                && (self.mode == GameMode::HighscoreTable) {
+            self.mode = GameMode::Menu;
             self.highscore_table.hide();
 
           } else if ((keycode == sdl2::keyboard::Keycode::F5)
                   || (keycode == sdl2::keyboard::Keycode::F6))
-                && ((self.mode == Mode::Menu) || (self.mode == Mode::HighscoreTable)) {
-            self.mode = Mode::Running;
-            self.difficulty = if keycode == sdl2::keyboard::Keycode::F5 { Difficulty::Easy }
-                else { Difficulty::Hard };
+                && ((self.mode == GameMode::Menu) || (self.mode == GameMode::HighscoreTable)) {
+            self.mode = GameMode::Running;
+            self.difficulty = if keycode == sdl2::keyboard::Keycode::F5 { GameDifficulty::Easy }
+                else { GameDifficulty::Hard };
             let game_start_instant = now + self.countdown_duration;
             self.counting_down = true;
             self.score.start_game(game_start_instant);
@@ -216,14 +216,14 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
           } else if keycode == sdl2::keyboard::Keycode::Escape {
             match self.mode {
-              Mode::Menu | Mode::HighscoreTable => {
+              GameMode::Menu | GameMode::HighscoreTable => {
                 self.quit_flag = true;
               },
-              Mode::HelpPage1 | Mode::HelpPage2 => {
-                self.mode = Mode::Menu;
+              GameMode::HelpPage1 | GameMode::HelpPage2 => {
+                self.mode = GameMode::Menu;
               },
-              Mode::Running => {
-                self.mode = Mode::Menu;
+              GameMode::Running => {
+                self.mode = GameMode::Menu;
                 self.score.start_menu();
                 self.landscape.start_menu();
                 self.level.start_menu();
@@ -234,11 +234,11 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
           } else if ((keycode == sdl2::keyboard::Keycode::Escape)
                   || (keycode == sdl2::keyboard::Keycode::Space))
-                && ((self.mode == Mode::HelpPage1) || (self.mode == Mode::HelpPage2)) {
-            self.mode = Mode::Menu;
+                && ((self.mode == GameMode::HelpPage1) || (self.mode == GameMode::HelpPage2)) {
+            self.mode = GameMode::Menu;
 
           } else if (keycode == sdl2::keyboard::Keycode::Space)
-                && (self.mode == Mode::Running)
+                && (self.mode == GameMode::Running)
                 && (now - self.last_gift_instant >= self.new_gift_wait_duration) {
             self.gifts.push(gift::Gift::new(
                 self.asset_library, &self.level, &self.sleigh, self.buffer_size, self.difficulty));
@@ -254,7 +254,7 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
     let keyboard_state = self.event_pump.keyboard_state();
 
     match self.mode {
-      Mode::Running => {
+      GameMode::Running => {
         self.sleigh.check_keyboard_state(&keyboard_state);
       },
       _ => {},
@@ -320,20 +320,20 @@ impl<'a: 'b, 'b> Game<'a, 'b> {
 
   fn draw_to_canvas(canvas: &mut sdl2::render::WindowCanvas, draw_arguments: DrawArguments) {
     let background_image_name = match draw_arguments.mode {
-      Mode::HelpPage1 => "help1",
-      Mode::HelpPage2 => "help2",
-      Mode::Won | Mode::NewHighscore => "won",
-      Mode::LostDueToTime => "lostDueToTime",
-      Mode::LostDueToDamage => "lostDueToDamage",
+      GameMode::HelpPage1 => "help1",
+      GameMode::HelpPage2 => "help2",
+      GameMode::Won | GameMode::NewHighscore => "won",
+      GameMode::LostDueToTime => "lostDueToTime",
+      GameMode::LostDueToDamage => "lostDueToDamage",
       _ => "background",
     };
 
     draw_arguments.asset_library.get_image(background_image_name).draw(canvas, Point::zero(), 0.0);
 
     match draw_arguments.mode {
-      Mode::NewHighscore => {
+      GameMode::NewHighscore => {
       },
-      Mode::Menu | Mode::HighscoreTable | Mode::Running => {
+      GameMode::Menu | GameMode::HighscoreTable | GameMode::Running => {
         draw_arguments.landscape.draw(canvas);
         draw_arguments.level.draw(canvas);
         draw_arguments.sleigh.draw(canvas, draw_arguments.font);

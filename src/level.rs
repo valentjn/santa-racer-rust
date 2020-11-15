@@ -30,7 +30,7 @@ pub struct Level<'a> {
   dog_sound: &'a asset::Sound,
   bell_sound: &'a asset::Sound,
 
-  pub game_mode: game::Mode,
+  pub game_mode: game::GameMode,
 
   pub offset_x: f64,
   pub scroll_speed_x: f64,
@@ -157,7 +157,7 @@ impl<'a> Level<'a> {
       dog_sound: asset_library.get_sound("dog"),
       bell_sound: asset_library.get_sound("bell"),
 
-      game_mode: game::Mode::Menu,
+      game_mode: game::GameMode::Menu,
 
       offset_x: 0.0,
       scroll_speed_x: 0.0,
@@ -204,14 +204,14 @@ impl<'a> Level<'a> {
   }
 
   pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
-    self.game_mode = game::Mode::Running;
+    self.game_mode = game::GameMode::Running;
     self.offset_x = 0.0;
     self.game_start_instant = game_start_instant;
     self.scrolling_resume_instant = game_start_instant;
   }
 
   pub fn start_menu(&mut self) {
-    self.game_mode = game::Mode::Menu;
+    self.game_mode = game::GameMode::Menu;
     self.offset_x = 0.0;
     self.scrolling_resume_instant = std::time::Instant::now();
   }
@@ -224,7 +224,7 @@ impl<'a> Level<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
-    if self.game_mode == game::Mode::Menu {
+    if self.game_mode == game::GameMode::Menu {
       self.scroll_speed_x = self.menu_scroll_speed_x;
     } else {
       self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position.x

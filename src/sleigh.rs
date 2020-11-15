@@ -18,7 +18,7 @@ pub struct Sleigh<'a> {
   collided_with_level_sound1: &'a asset::Sound,
   collided_with_level_sound2: &'a asset::Sound,
 
-  pub game_mode: game::Mode,
+  pub game_mode: game::GameMode,
 
   pub size: Point,
   pub position: Point,
@@ -97,7 +97,7 @@ impl<'a> Sleigh<'a> {
       collided_with_level_sound1: asset_library.get_sound("sleighCollidedWithLevel1"),
       collided_with_level_sound2: asset_library.get_sound("sleighCollidedWithLevel2"),
 
-      game_mode: game::Mode::Menu,
+      game_mode: game::GameMode::Menu,
 
       size: size,
       position: Point::zero(),
@@ -138,7 +138,7 @@ impl<'a> Sleigh<'a> {
   }
 
   pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
-    self.game_mode = game::Mode::Running;
+    self.game_mode = game::GameMode::Running;
     self.position = self.game_start_position;
     self.counting_down = true;
     self.drunk = false;
@@ -149,7 +149,7 @@ impl<'a> Sleigh<'a> {
   }
 
   pub fn start_menu(&mut self) {
-    self.game_mode = game::Mode::Menu;
+    self.game_mode = game::GameMode::Menu;
     self.counting_down = false;
     self.drunk = false;
     self.invincible = false;
@@ -159,7 +159,7 @@ impl<'a> Sleigh<'a> {
   }
 
   pub fn check_keyboard_state(&mut self, keyboard_state: &sdl2::keyboard::KeyboardState) {
-    if (self.game_mode == game::Mode::Menu) || self.immobile || self.counting_down { return; }
+    if (self.game_mode == game::GameMode::Menu) || self.immobile || self.counting_down { return; }
     let drunk_factor = 1.0;
 
     if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left) {
@@ -196,7 +196,7 @@ impl<'a> Sleigh<'a> {
 
     if self.counting_down && (now >= self.game_start_instant) { self.counting_down = false; }
 
-    if self.game_mode == game::Mode::Menu {
+    if self.game_mode == game::GameMode::Menu {
       let seconds_since_menu_start = now.duration_since(self.menu_start_instant).as_secs_f64();
       self.position.x = (f64::sin(seconds_since_menu_start / self.menu_period.x
               * 2.0 * std::f64::consts::PI + self.menu_offset_angle.x) + 1.0)
@@ -235,7 +235,7 @@ impl<'a> Sleigh<'a> {
           (self.reindeer_image.total_number_of_frames() as f64) / 2.0;
     }
 
-    if (self.game_mode == game::Mode::Menu) || self.invincible || self.immobile
+    if (self.game_mode == game::GameMode::Menu) || self.invincible || self.immobile
           || self.counting_down {
       if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
       if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }

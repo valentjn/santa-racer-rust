@@ -57,14 +57,14 @@ pub enum GiftMode {
 
 impl<'a> Gift<'a> {
   pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level<'_>,
-        sleigh: &sleigh::Sleigh<'_>, canvas_size: Point, difficulty: game::Difficulty) -> Gift<'a> {
+        sleigh: &sleigh::Sleigh<'_>, canvas_size: Point, difficulty: game::GameDifficulty) -> Gift<'a> {
     let number_of_gift_types = 4;
     let image = asset_library.get_image(format!("gift{}",
         rand::thread_rng().gen_range(1, number_of_gift_types)));
     let velocity_y = 50.0;
     let velocity = match difficulty {
-      game::Difficulty::Easy => Point::new(level.scroll_speed_x, velocity_y),
-      game::Difficulty::Hard => Point::new(sleigh.velocity.x + level.scroll_speed_x,
+      game::GameDifficulty::Easy => Point::new(level.scroll_speed_x, velocity_y),
+      game::GameDifficulty::Hard => Point::new(sleigh.velocity.x + level.scroll_speed_x,
         velocity_y + sleigh.velocity.y),
     };
 

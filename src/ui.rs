@@ -14,7 +14,7 @@ pub struct Score<'a> {
   time_image: &'a asset::Image<'a>,
   canvas_size: asset::Point,
 
-  game_mode: game::Mode,
+  game_mode: game::GameMode,
 
   gift_points: f64,
   damage_points: f64,
@@ -33,7 +33,7 @@ pub struct HighscoreTable<'a> {
   background_image: asset::Image<'a>,
   canvas_size: asset::Point,
 
-  game_mode: game::Mode,
+  game_mode: game::GameMode,
 
   size: Point,
   position: Point,
@@ -73,7 +73,7 @@ impl<'a> Score<'a> {
       time_image: asset_library.get_image("timeScoreIcon"),
       canvas_size: canvas_size,
 
-      game_mode: game::Mode::Menu,
+      game_mode: game::GameMode::Menu,
 
       gift_points: 0.0,
       damage_points: 0.0,
@@ -90,7 +90,7 @@ impl<'a> Score<'a> {
   }
 
   pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
-    self.game_mode = game::Mode::Running;
+    self.game_mode = game::GameMode::Running;
     self.gift_points = 0.0;
     self.damage_points = 0.0;
     self.remaining_duration = std::time::Duration::from_millis(450000);
@@ -99,7 +99,7 @@ impl<'a> Score<'a> {
   }
 
   pub fn start_menu(&mut self) {
-    self.game_mode = game::Mode::Menu;
+    self.game_mode = game::GameMode::Menu;
   }
 
   pub fn add_gift_points(&mut self, gift_points: f64) {
@@ -113,7 +113,7 @@ impl<'a> Score<'a> {
   pub fn do_logic(&mut self) {
     let now = std::time::Instant::now();
 
-    if (self.game_mode == game::Mode::Running) && (now >= self.game_start_instant) {
+    if (self.game_mode == game::GameMode::Running) && (now >= self.game_start_instant) {
       self.remaining_duration -= now - self.last_update_instant;
       let zero_duration = std::time::Duration::from_millis(0);
       if self.remaining_duration < zero_duration { self.remaining_duration = zero_duration; }
@@ -124,7 +124,7 @@ impl<'a> Score<'a> {
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &'a Font<'a>) {
-    if self.game_mode == game::Mode::Menu {
+    if self.game_mode == game::GameMode::Menu {
       font.draw(canvas, Point::zero(), "F1/F2 - Hilfe", Alignment::TopLeft);
       font.draw(canvas, Point::new(self.canvas_size.x / 2.0, 0.0), "F3 - Highscores",
           Alignment::TopCenter);
@@ -169,7 +169,7 @@ impl<'a> HighscoreTable<'a> {
       background_image: background_image,
       canvas_size: canvas_size,
 
-      game_mode: game::Mode::Menu,
+      game_mode: game::GameMode::Menu,
 
       size: size,
       position: position,
@@ -179,18 +179,18 @@ impl<'a> HighscoreTable<'a> {
   }
 
   pub fn show(&mut self) {
-    self.game_mode = game::Mode::HighscoreTable;
+    self.game_mode = game::GameMode::HighscoreTable;
   }
 
   pub fn hide(&mut self) {
-    self.game_mode = game::Mode::Menu;
+    self.game_mode = game::GameMode::Menu;
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &Font,
         highscores: &Vec<options::Highscore>) {
-    if (self.game_mode != game::Mode::HighscoreTable)
-        && (self.game_mode != game::Mode::NewHighscore) {
+    if (self.game_mode != game::GameMode::HighscoreTable)
+        && (self.game_mode != game::GameMode::NewHighscore) {
       return;
     }
 
