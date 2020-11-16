@@ -414,12 +414,12 @@ impl Sound {
     self.play_with_volume_and_pan(1.0, 0.5);
   }
 
-  pub fn play_with_level_position<'a>(&self, level: &level::Level, position_x: f64) {
-    self.play_with_position(level, position_x - level.offset_x);
+  pub fn play_with_level_position(&self, level: &level::Level, position: Point) {
+    self.play_with_position(level.canvas_size, Point::new(position.x - level.offset_x, position.y));
   }
 
-  pub fn play_with_position<'a>(&self, level: &level::Level, position_x: f64) {
-    self.play_with_pan(position_x / level.canvas_size.x);
+  pub fn play_with_position(&self, canvas_size: Point, position: Point) {
+    self.play_with_pan(position.x / canvas_size.x);
   }
 
   pub fn play_with_pan(&self, pan: f64) {

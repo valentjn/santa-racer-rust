@@ -28,6 +28,7 @@ pub struct Gift<'a> {
   collided_with_ground_sound: &'a asset::Sound,
 
   pub mode: GiftMode,
+  bonus: bool,
 
   size: Point,
   pub position: Point,
@@ -40,6 +41,7 @@ pub struct Gift<'a> {
   star2_offset: Point,
   star3_offset: Point,
   points_offset: Point,
+  bonus_offset: Point,
   star1_frame_offset: f64,
   star2_frame_offset: f64,
   star3_frame_offset: f64,
@@ -80,6 +82,7 @@ impl<'a> Gift<'a> {
       collided_with_ground_sound: asset_library.get_sound("giftCollidedWithGround"),
 
       mode: GiftMode::Falling,
+      bonus: sleigh.bonus,
 
       size: image.size(),
       position: Point::new(sleigh.position.x + level.offset_x, sleigh.position.y + sleigh.size.y),
@@ -92,6 +95,7 @@ impl<'a> Gift<'a> {
       star2_offset: Point::new(25.0, 15.0),
       star3_offset: Point::new(15.0, 25.0),
       points_offset: Point::new(10.0, 10.0),
+      bonus_offset: Point::new(10.0, 10.0),
       star1_frame_offset: 0.0,
       star2_frame_offset: 2.0,
       star3_frame_offset: 4.0,
@@ -119,11 +123,11 @@ impl<'a> Gift<'a> {
               else if chimney_tile_y == 2 { 15.0 } else { 20.0 };
           self.mode = GiftMode::ShowingPoints(gift_points);
           self.frame = 0.0;
-          self.collided_with_chimney_sound.play_with_level_position(level, self.position.x);
-          score.add_gift_points(gift_points);
+          self.collided_with_chimney_sound.play_with_level_position(level, self.position);
+          score.add_gift_points(if self.bonus { 2.0 * gift_points } else { gift_points });
         } else if self.has_collided_with_ground() {
           self.mode = GiftMode::CanBeDeleted;
-          self.collided_with_ground_sound.play_with_level_position(level, self.position.x);
+          self.collided_with_ground_sound.play_with_level_position(level, self.position);
           score.add_damage_points(self.damage_points);
         }
       },
@@ -178,12 +182,20 @@ impl<'a> Gift<'a> {
       GiftMode::Falling => {
         self.image.draw(canvas, position, self.frame);
       },
+
       GiftMode::ShowingPoints(gift_points) => {
-        let position: Point = Point::new(position.x - self.star_image.width() / 2.0,
+        let position = Point::new(position.x - self.star_image.width() / 2.0,
             position.y - self.star_image.height() / 2.0);
+        let bonus_position = Point::new(position.x + self.bonus_offset.x,
+            position.y + self.bonus_offset.y);
+
         self.draw_star(position, canvas);
+        if self.bonus { self.draw_star(bonus_position, canvas); }
+
         self.draw_points(position, gift_points, canvas);
+        if self.bonus { self.draw_points(bonus_position, gift_points, canvas); }
       },
+
       _ => {},
     }
   }

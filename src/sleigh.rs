@@ -13,6 +13,7 @@ use crate::asset::Point;
 pub struct Sleigh<'a> {
   sleigh_image: &'a asset::Image<'a>,
   reindeer_image: &'a asset::Image<'a>,
+  shield_image: &'a asset::Image<'a>,
   canvas_size: asset::Point,
 
   pub game_mode: game::GameMode,
@@ -28,7 +29,10 @@ pub struct Sleigh<'a> {
   velocity_y_instant2: std::time::Instant,
   sleigh_frame: f64,
   reindeer_frame: f64,
+  shield_frame: f64,
   pub counting_down: bool,
+  pub bonus: bool,
+  shield: bool,
   drunk: bool,
   pub invincible: bool,
   pub immobile: bool,
@@ -36,6 +40,9 @@ pub struct Sleigh<'a> {
   invincible_blink: bool,
   game_start_instant: std::time::Instant,
   last_gift_instant: std::time::Instant,
+  bonus_reset_instant: std::time::Instant,
+  shield_reset_instant: std::time::Instant,
+  drunk_reset_instant: std::time::Instant,
   invincible_reset_instant: std::time::Instant,
   immobile_reset_instant: std::time::Instant,
   menu_start_instant: std::time::Instant,
@@ -48,9 +55,14 @@ pub struct Sleigh<'a> {
   max_velocity: Point,
   max_acceleration: Point,
   reindeer_offset: Point,
+  shield_offset: Point,
   countdown_counter_offset_x: f64,
   frame_speed: f64,
+  shield_frame_speed: f64,
   new_gift_wait_duration: std::time::Duration,
+  bonus_duration: std::time::Duration,
+  shield_duration: std::time::Duration,
+  drunk_duration: std::time::Duration,
   invincible_duration: std::time::Duration,
   pub immobile_duration: std::time::Duration,
   invincible_blink_periods: i32,
@@ -97,6 +109,7 @@ impl<'a> Sleigh<'a> {
     return Sleigh{
       sleigh_image: sleigh_image,
       reindeer_image: reindeer_image,
+      shield_image: asset_library.get_image("shield"),
       canvas_size: canvas_size,
 
       game_mode: game::GameMode::Menu,
@@ -112,7 +125,10 @@ impl<'a> Sleigh<'a> {
       velocity_y_instant2: std::time::Instant::now(),
       sleigh_frame: 0.0,
       reindeer_frame: 0.0,
+      shield_frame: 0.0,
       counting_down: false,
+      bonus: false,
+      shield: false,
       drunk: false,
       invincible: false,
       immobile: false,
@@ -120,6 +136,9 @@ impl<'a> Sleigh<'a> {
       invincible_blink: false,
       game_start_instant: now,
       last_gift_instant: now,
+      bonus_reset_instant: now,
+      shield_reset_instant: now,
+      drunk_reset_instant: now,
       invincible_reset_instant: now,
       immobile_reset_instant: now,
       menu_start_instant: now,
@@ -132,9 +151,14 @@ impl<'a> Sleigh<'a> {
       max_velocity: Point::new(200.0, 200.0),
       max_acceleration: Point::new(1000.0, 1000.0),
       reindeer_offset: reindeer_offset,
+      shield_offset: Point::new(-12.0, -17.0),
       countdown_counter_offset_x: -10.0,
-      frame_speed: 13.0,
+      frame_speed: 14.0,
+      shield_frame_speed: 8.0,
       new_gift_wait_duration: std::time::Duration::from_millis(250),
+      bonus_duration: std::time::Duration::from_millis(15000),
+      shield_duration: std::time::Duration::from_millis(15000),
+      drunk_duration: std::time::Duration::from_millis(15000),
       invincible_duration: std::time::Duration::from_millis(8000),
       immobile_duration: std::time::Duration::from_millis(5000),
       invincible_blink_periods: 16,
@@ -156,7 +180,7 @@ impl<'a> Sleigh<'a> {
     for i in 0 .. data.len() / 4 {
       chimneys.push(gift::Chimney{
         position: Point::new(data[4 * i], data[4 * i + 1]),
-        size: Point::new(data[4 * i + 2], 5.0),
+        size: Point::new(data[4 * i + 2], 20.0),
         frame: data[4 * i + 3],
       });
     }
@@ -187,7 +211,7 @@ impl<'a> Sleigh<'a> {
 
   pub fn check_keyboard_state(&mut self, keyboard_state: &sdl2::keyboard::KeyboardState) {
     if (self.game_mode == game::GameMode::Menu) || self.immobile || self.counting_down { return; }
-    let drunk_factor = 1.0;
+    let drunk_factor = if self.drunk { -1.0 } else { 1.0 };
 
     if keyboard_state.is_scancode_pressed(sdl2::keyboard::Scancode::Left) {
       self.update_velocity_x(-drunk_factor);
@@ -265,6 +289,22 @@ impl<'a> Sleigh<'a> {
     self.last_gift_instant = now;
   }
 
+  pub fn start_bonus(&mut self) {
+    self.bonus = true;
+    self.bonus_reset_instant = std::time::Instant::now() + self.bonus_duration;
+  }
+
+  pub fn start_shield(&mut self) {
+    self.shield = true;
+    self.shield_reset_instant = std::time::Instant::now() + self.shield_duration;
+    self.shield_frame = 0.0;
+  }
+
+  pub fn start_drunk(&mut self) {
+    self.drunk = true;
+    self.drunk_reset_instant = std::time::Instant::now() + self.drunk_duration;
+  }
+
   pub fn do_logic(&mut self, score: &mut ui::Score, level: &mut level::Level) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
@@ -308,10 +348,8 @@ impl<'a> Sleigh<'a> {
           (self.reindeer_image.total_number_of_frames() as f64) / 2.0;
     }
 
-    if (self.game_mode == game::GameMode::Menu) || self.invincible || self.immobile
-          || self.counting_down {
-      if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
-      if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
+    if self.shield {
+      self.shield_frame += seconds_since_last_update * self.frame_speed;
     }
 
     if self.counting_down {
@@ -341,6 +379,12 @@ impl<'a> Sleigh<'a> {
     for star in &mut self.stars {
       star.do_logic(self.position, self.size, self.drunk);
     }
+
+    if self.bonus && (now >= self.bonus_reset_instant) { self.bonus = false; }
+    if self.shield && (now >= self.shield_reset_instant) { self.shield = false; }
+    if self.drunk && (now >= self.drunk_reset_instant) { self.drunk = false; }
+    if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
+    if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
 
     self.last_update_instant = now;
   }
@@ -379,6 +423,11 @@ impl<'a> Sleigh<'a> {
 
     for gift in &self.gifts { gift.draw(canvas, level); }
     for star in &self.stars { star.draw(canvas); }
+
+    if self.shield {
+      self.shield_image.draw(canvas, Point::new(self.position.x + self.shield_offset.x,
+          self.position.y + self.shield_offset.y), self.shield_frame);
+    }
 
     if self.counting_down {
       font.draw(canvas, Point::new(self.position.x + self.countdown_counter_offset_x,

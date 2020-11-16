@@ -103,11 +103,11 @@ impl<'a> Score<'a> {
   }
 
   pub fn add_gift_points(&mut self, gift_points: f64) {
-    self.gift_points += gift_points;
+    self.gift_points = (self.gift_points + gift_points).max(0.0);
   }
 
   pub fn add_damage_points(&mut self, damage_points: f64) {
-    self.damage_points += damage_points;
+    self.damage_points = (self.damage_points + damage_points).max(0.0);
   }
 
   pub fn do_logic(&mut self) {

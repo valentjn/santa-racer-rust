@@ -265,18 +265,23 @@ impl<'a> Level<'a> {
           self.min_bell_sound_duration, self.max_bell_sound_duration);
     }
 
-    if (self.game_mode == game::GameMode::Running) && !sleigh.invincible && !sleigh.immobile
-          && !sleigh.counting_down && self.sleigh_collides_with_tile(sleigh) {
-      let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
-        0 => self.sleigh_collided_with_tile_sound1,
-        _ => self.sleigh_collided_with_tile_sound2,
-      };
+    if (self.game_mode == game::GameMode::Running) && !sleigh.immobile && !sleigh.counting_down {
+      if self.sleigh_collides_with_tile(sleigh) {
+        let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
+          0 => self.sleigh_collided_with_tile_sound1,
+          _ => self.sleigh_collided_with_tile_sound2,
+        };
 
-      collided_with_level_sound.play_with_position(self, sleigh.position.x);
-      sleigh.collide_with_level_tile();
-      score.add_damage_points(self.sleigh_collided_with_tile_damage_points);
-      landscape.pause_scrolling(now + sleigh.immobile_duration);
-      self.pause_scrolling(now + sleigh.immobile_duration);
+        collided_with_level_sound.play_with_position(self.canvas_size, sleigh.position);
+        sleigh.collide_with_level_tile();
+        score.add_damage_points(self.sleigh_collided_with_tile_damage_points);
+        landscape.pause_scrolling(now + sleigh.immobile_duration);
+        self.pause_scrolling(now + sleigh.immobile_duration);
+      }
+
+      for npc in &mut self.npcs {
+        npc.check_collision_with_sleigh(score, self.offset_x, sleigh);
+      }
     }
 
     let mut delete_npc: Vec<bool> = vec![true; self.npcs.len()];
@@ -322,6 +327,8 @@ impl<'a> Level<'a> {
   }
 
   fn sleigh_collides_with_tile(&self, sleigh: &sleigh::Sleigh) -> bool {
+    if sleigh.invincible { return false; }
+
     for (tile_x, tile_y) in self.visible_tiles_iter() {
       let tile_frame = self.tile_map[tile_y][tile_x];
       if tile_frame < 0.0 { continue; }

@@ -10,7 +10,8 @@ use crate::asset::Point;
 
 pub trait Npc {
   fn do_logic(&mut self, level_offset_x: f64, sleigh: &sleigh::Sleigh);
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool;
+  fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
+      level_offset_x: f64, sleigh: &mut sleigh::Sleigh);
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level);
 
   fn tile(&self) -> (usize, usize);
@@ -38,9 +39,14 @@ struct Angel<'a> {
 
 struct Balloon<'a> {
   npc_base: NpcBase<'a>,
+  sound: &'a asset::Sound,
 
   balloon_type: BalloonType,
   frame_increasing: bool,
+  visible: bool,
+
+  cash_balloon_damage_points: f64,
+  heart_balloon_gift_points: f64,
 }
 
 struct Cloud<'a> {
@@ -69,7 +75,7 @@ enum BalloonType {
 
 pub fn new_npc<'a>(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
       tile: (usize, usize), frame: f64) -> Box<dyn Npc + 'a> {
-  if frame == 70.0 {
+  if frame == 69.0 {
     return Box::new(Angel::new(asset_library, level, tile));
   } else if frame == 70.0 {
     return Box::new(Balloon::new(asset_library, level, tile, BalloonType::Cash));
@@ -131,8 +137,9 @@ impl<'a> NpcBase<'a> {
     self.last_update_instant = now;
   }
 
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return sleigh.collides_with_image(self.image, self.position, self.frame);
+  fn collides_with_sleigh(&mut self, level_offset_x: f64, sleigh: &mut sleigh::Sleigh) -> bool {
+    return sleigh.collides_with_image(self.image,
+        Point::new(self.position.x - level_offset_x, self.position.y), self.frame);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
@@ -155,8 +162,9 @@ impl<'a> Npc for Angel<'a> {
     self.npc_base.do_logic();
   }
 
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return self.npc_base.collides_with_sleigh(sleigh);
+  fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
+        level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
+    //return self.npc_base.collides_with_sleigh(sleigh);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
@@ -175,19 +183,26 @@ impl<'a> Npc for Angel<'a> {
 impl<'a> Balloon<'a> {
   pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
         tile: (usize, usize), balloon_type: BalloonType) -> Balloon<'a> {
-    let image = match balloon_type {
-      BalloonType::Cash => asset_library.get_image("cashBalloon"),
-      BalloonType::Gift => asset_library.get_image("giftBalloon"),
-      BalloonType::Heart => asset_library.get_image("heartBalloon"),
-      BalloonType::Shield => asset_library.get_image("shieldBalloon"),
-      BalloonType::Wine => asset_library.get_image("wineBalloon"),
+    let image_name = match balloon_type {
+      BalloonType::Cash => "cashBalloon",
+      BalloonType::Gift => "giftBalloon",
+      BalloonType::Heart => "heartBalloon",
+      BalloonType::Shield => "shieldBalloon",
+      BalloonType::Wine => "wineBalloon",
     };
+    let sound_name = if image_name == "heartBalloon" { "giftCollidedWithChimney" }
+        else { image_name };
 
     return Balloon{
-      npc_base: NpcBase::new(image, level, tile, 10.0),
+      npc_base: NpcBase::new(asset_library.get_image(image_name), level, tile, 10.0),
+      sound: asset_library.get_sound(sound_name),
 
       balloon_type: balloon_type,
       frame_increasing: true,
+      visible: true,
+
+      cash_balloon_damage_points: -50.0,
+      heart_balloon_gift_points: 20.0,
     };
   }
 }
@@ -218,12 +233,24 @@ impl<'a> Npc for Balloon<'a> {
     self.npc_base.last_update_instant = now;
   }
 
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return self.npc_base.collides_with_sleigh(sleigh);
+  fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
+        level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
+    if self.visible && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
+      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      self.visible = false;
+
+      match self.balloon_type {
+        BalloonType::Cash => { score.add_damage_points(self.cash_balloon_damage_points); },
+        BalloonType::Gift => { sleigh.start_bonus(); },
+        BalloonType::Heart => { score.add_gift_points(self.heart_balloon_gift_points); },
+        BalloonType::Shield => { sleigh.start_shield(); },
+        BalloonType::Wine => { sleigh.start_drunk(); },
+      }
+    }
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    self.npc_base.draw(canvas, level);
+    if self.visible { self.npc_base.draw(canvas, level); }
   }
 
   fn tile(&self) -> (usize, usize) {
@@ -249,8 +276,9 @@ impl<'a> Npc for Cloud<'a> {
     self.npc_base.do_logic();
   }
 
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return self.npc_base.collides_with_sleigh(sleigh);
+  fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
+        level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
+    //return self.npc_base.collides_with_sleigh(sleigh);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
@@ -284,8 +312,9 @@ impl<'a> Npc for Finish<'a> {
     self.npc_base.do_logic();
   }
 
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return self.npc_base.collides_with_sleigh(sleigh);
+  fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
+        level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
+    //return self.npc_base.collides_with_sleigh(sleigh);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
@@ -315,8 +344,9 @@ impl<'a> Npc for Goblin<'a> {
     self.npc_base.do_logic();
   }
 
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return self.npc_base.collides_with_sleigh(sleigh);
+  fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
+        level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
+    //return self.npc_base.collides_with_sleigh(sleigh);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
@@ -346,8 +376,9 @@ impl<'a> Npc for Snowman<'a> {
     self.npc_base.do_logic();
   }
 
-  fn collides_with_sleigh(&self, sleigh: &sleigh::Sleigh) -> bool {
-    return self.npc_base.collides_with_sleigh(sleigh);
+  fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
+        level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
+    //return self.npc_base.collides_with_sleigh(sleigh);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
