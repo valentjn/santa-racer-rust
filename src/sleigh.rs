@@ -20,7 +20,12 @@ pub struct Sleigh<'a> {
   pub size: Point,
   pub position: Point,
   pub velocity: Point,
-  acceleration: Point,
+  velocity_point1: Point,
+  velocity_point2: Point,
+  velocity_x_instant1: std::time::Instant,
+  velocity_x_instant2: std::time::Instant,
+  velocity_y_instant1: std::time::Instant,
+  velocity_y_instant2: std::time::Instant,
   sleigh_frame: f64,
   reindeer_frame: f64,
   pub counting_down: bool,
@@ -99,7 +104,12 @@ impl<'a> Sleigh<'a> {
       size: size,
       position: Point::zero(),
       velocity: Point::zero(),
-      acceleration: Point::zero(),
+      velocity_point1: Point::zero(),
+      velocity_point2: Point::zero(),
+      velocity_x_instant1: std::time::Instant::now(),
+      velocity_x_instant2: std::time::Instant::now(),
+      velocity_y_instant1: std::time::Instant::now(),
+      velocity_y_instant2: std::time::Instant::now(),
       sleigh_frame: 0.0,
       reindeer_frame: 0.0,
       counting_down: false,
@@ -196,14 +206,54 @@ impl<'a> Sleigh<'a> {
     }
   }
 
-  fn update_velocity_x(&mut self, mut sign: f64) {
-    if (sign == 0.0) && (self.velocity.x != 0.0) { sign = -self.velocity.x.signum(); }
-    self.acceleration.x = sign * self.max_acceleration.x;
+  fn update_velocity_x(&mut self, sign: f64) {
+    let now = std::time::Instant::now();
+    let velocity_x = self.get_velocity_x(now);
+
+    self.velocity_x_instant1 = now;
+    self.velocity_point1.x = velocity_x;
+
+    let target_velocity_x = sign * self.max_velocity.x;
+    self.velocity_x_instant2 = now + std::time::Duration::from_secs_f64(
+        (target_velocity_x - velocity_x).abs() / self.max_acceleration.x);
+    self.velocity_point2.x = target_velocity_x;
   }
 
-  fn update_velocity_y(&mut self, mut sign: f64) {
-    if (sign == 0.0) && (self.velocity.y != 0.0) { sign = -self.velocity.y.signum(); }
-    self.acceleration.y = sign * self.max_acceleration.y;
+  fn update_velocity_y(&mut self, sign: f64) {
+    let now = std::time::Instant::now();
+    let velocity_y = self.get_velocity_y(now);
+
+    self.velocity_y_instant1 = now;
+    self.velocity_point1.y = velocity_y;
+
+    let target_velocity_y = sign * self.max_velocity.y;
+    self.velocity_y_instant2 = now + std::time::Duration::from_secs_f64(
+        (target_velocity_y - velocity_y).abs() / self.max_acceleration.y);
+    self.velocity_point2.y = target_velocity_y;
+  }
+
+  fn get_velocity_x(&self, instant: std::time::Instant) -> f64 {
+    if instant <= self.velocity_x_instant1 {
+      return self.velocity_point1.x;
+    } else if instant >= self.velocity_x_instant2 {
+      return self.velocity_point2.x;
+    } else {
+      return self.velocity_point1.x + (self.velocity_point2.x - self.velocity_point1.x)
+          * (instant - self.velocity_x_instant1).as_secs_f64()
+          / (self.velocity_x_instant2 - self.velocity_x_instant1).as_secs_f64();
+    }
+  }
+
+  fn get_velocity_y(&self, instant: std::time::Instant) -> f64 {
+    if instant <= self.velocity_y_instant1 {
+      return self.velocity_point1.y;
+    } else if instant >= self.velocity_y_instant2 {
+      return self.velocity_point2.y;
+    } else {
+      return self.velocity_point1.y + (self.velocity_point2.y - self.velocity_point1.y)
+          * (instant - self.velocity_y_instant1).as_secs_f64()
+          / (self.velocity_y_instant2 - self.velocity_y_instant1).as_secs_f64();
+    }
   }
 
   pub fn drop_gift(&mut self, asset_library: &'a asset::AssetLibrary, level: &level::Level,
@@ -233,10 +283,8 @@ impl<'a> Sleigh<'a> {
             + self.menu_min_position.y;
     } else if self.counting_down {
     } else {
-      self.velocity.x = (self.velocity.x + seconds_since_last_update * self.acceleration.x)
-          .max(-self.max_velocity.x).min(self.max_velocity.x);
-      self.velocity.y = (self.velocity.y + seconds_since_last_update * self.acceleration.y)
-          .max(-self.max_velocity.y).min(self.max_velocity.y);
+      self.velocity.x = self.get_velocity_x(now);
+      self.velocity.y = self.get_velocity_y(now);
 
       if ((self.velocity.x < 0.0) && (self.position.x <= 0.0))
             || ((self.velocity.x > 0.0) && (self.position.x >= self.canvas_size.x - self.size.x)) {
@@ -304,7 +352,8 @@ impl<'a> Sleigh<'a> {
     self.invincible_reset_instant = now + self.invincible_duration;
     self.immobile_reset_instant = now + self.immobile_duration;
     self.velocity = Point::new(0.0, -self.max_velocity.y);
-    self.acceleration = Point::zero();
+    self.velocity_point1 = self.velocity;
+    self.velocity_point2 = self.velocity;
   }
 
   pub fn collides_with_image(&self, image: &asset::Image, position: Point, frame: f64) -> bool {
