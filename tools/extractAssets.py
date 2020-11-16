@@ -240,7 +240,7 @@ def main():
               "-family", "Palatino", "-style", "Normal", "-pointsize", "14",
               "-fill", "white", "-gravity", "NorthWest",
               "-annotate", "-1x-1+51+8080", "Frohes Fest", dstFilePath])
-        elif dstFileName in ["bigStar.png", "drunkStar.png", "smallDrunkStar.png",
+        elif dstFileName in ["bigStar.png", "drunkStar.png", "shield.png", "smallDrunkStar.png",
               "smallStar.png", "star.png"]:
           subprocess.run(["convert", dstFilePath, "-alpha", "copy", dstFilePath])
       elif dstExtension == ".wav":
