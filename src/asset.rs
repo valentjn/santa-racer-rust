@@ -176,6 +176,7 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
     numbers_of_frames.insert("sleigh", (14, 1));
     numbers_of_frames.insert("snowman", (8, 1));
     numbers_of_frames.insert("smallStar", (17, 1));
+    numbers_of_frames.insert("smallDrunkStar", (17, 1));
     numbers_of_frames.insert("star", (17, 1));
     numbers_of_frames.insert("wineBalloon", (8, 1));
 
