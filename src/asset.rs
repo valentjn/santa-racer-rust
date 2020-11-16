@@ -160,7 +160,7 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
     let mut numbers_of_frames = std::collections::HashMap::new();
     numbers_of_frames.insert("angel", (13, 1));
     numbers_of_frames.insert("bigStar", (10, 1));
-    numbers_of_frames.insert("cashBalloon", (8, 1));
+    numbers_of_frames.insert("cashBalloon", (7, 1));
     numbers_of_frames.insert("drunkStar", (17, 1));
     numbers_of_frames.insert("font", (45, 1));
     numbers_of_frames.insert("gift1", (15, 1));
