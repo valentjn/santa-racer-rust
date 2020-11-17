@@ -123,11 +123,13 @@ impl<'a> Gift<'a> {
               else if chimney_tile_y == 2 { 15.0 } else { 20.0 };
           self.mode = GiftMode::ShowingPoints(gift_points);
           self.frame = 0.0;
-          self.collided_with_chimney_sound.play_with_level_position(level, self.position);
+          self.collided_with_chimney_sound.play_with_level_position(
+              self.canvas_size, level.offset_x, self.position);
           score.add_gift_points(if self.bonus { 2.0 * gift_points } else { gift_points });
         } else if self.has_collided_with_ground() {
           self.mode = GiftMode::CanBeDeleted;
-          self.collided_with_ground_sound.play_with_level_position(level, self.position);
+          self.collided_with_ground_sound.play_with_level_position(
+              self.canvas_size, level.offset_x, self.position);
           score.add_damage_points(self.damage_points);
         }
       },
