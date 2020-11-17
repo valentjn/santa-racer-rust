@@ -326,6 +326,11 @@ impl<'a> Sleigh<'a> {
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
     if self.counting_down && (now >= self.game_start_instant) { self.counting_down = false; }
+    if self.bonus && (now >= self.bonus_reset_instant) { self.bonus = false; }
+    if self.shield && (now >= self.shield_reset_instant) { self.shield = false; }
+    if self.drunk && (now >= self.drunk_reset_instant) { self.drunk = false; }
+    if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
+    if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
 
     if self.game_mode == game::GameMode::Menu {
       let seconds_since_menu_start = now.duration_since(self.menu_start_instant).as_secs_f64();
@@ -395,12 +400,6 @@ impl<'a> Sleigh<'a> {
     for star in &mut self.stars {
       star.do_logic(self.position, self.size, self.drunk);
     }
-
-    if self.bonus && (now >= self.bonus_reset_instant) { self.bonus = false; }
-    if self.shield && (now >= self.shield_reset_instant) { self.shield = false; }
-    if self.drunk && (now >= self.drunk_reset_instant) { self.drunk = false; }
-    if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
-    if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
 
     self.last_update_instant = now;
   }
