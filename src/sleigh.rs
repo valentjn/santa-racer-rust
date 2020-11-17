@@ -13,6 +13,8 @@ use crate::asset::Point;
 pub struct Sleigh<'a> {
   sleigh_image: &'a asset::Image<'a>,
   reindeer_image: &'a asset::Image<'a>,
+  electrocuted_sleigh_image: &'a asset::Image<'a>,
+  electrocuted_reindeer_image: &'a asset::Image<'a>,
   shield_image: &'a asset::Image<'a>,
   canvas_size: asset::Point,
 
@@ -32,10 +34,11 @@ pub struct Sleigh<'a> {
   shield_frame: f64,
   pub counting_down: bool,
   pub bonus: bool,
-  shield: bool,
+  pub shield: bool,
   drunk: bool,
   pub invincible: bool,
   pub immobile: bool,
+  electrocuted: bool,
   countdown_counter: i32,
   invincible_blink: bool,
   game_start_instant: std::time::Instant,
@@ -45,6 +48,7 @@ pub struct Sleigh<'a> {
   drunk_reset_instant: std::time::Instant,
   invincible_reset_instant: std::time::Instant,
   immobile_reset_instant: std::time::Instant,
+  electrocuted_reset_instant: std::time::Instant,
   menu_start_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
@@ -55,6 +59,7 @@ pub struct Sleigh<'a> {
   max_velocity: Point,
   max_acceleration: Point,
   reindeer_offset: Point,
+  electrocuted_offset: Point,
   shield_offset: Point,
   countdown_counter_offset_x: f64,
   frame_speed: f64,
@@ -65,6 +70,7 @@ pub struct Sleigh<'a> {
   drunk_duration: std::time::Duration,
   invincible_duration: std::time::Duration,
   pub immobile_duration: std::time::Duration,
+  electrocuted_duration: std::time::Duration,
   invincible_blink_period_duration: std::time::Duration,
   menu_period: Point,
   menu_offset_angle: Point,
@@ -109,6 +115,8 @@ impl<'a> Sleigh<'a> {
     return Sleigh{
       sleigh_image: sleigh_image,
       reindeer_image: reindeer_image,
+      electrocuted_sleigh_image: asset_library.get_image("electrocutedSleigh"),
+      electrocuted_reindeer_image: asset_library.get_image("electrocutedReindeer"),
       shield_image: asset_library.get_image("shield"),
       canvas_size: canvas_size,
 
@@ -132,6 +140,7 @@ impl<'a> Sleigh<'a> {
       drunk: false,
       invincible: false,
       immobile: false,
+      electrocuted: false,
       countdown_counter: 0,
       invincible_blink: false,
       game_start_instant: now,
@@ -141,6 +150,7 @@ impl<'a> Sleigh<'a> {
       drunk_reset_instant: now,
       invincible_reset_instant: now,
       immobile_reset_instant: now,
+      electrocuted_reset_instant: now,
       menu_start_instant: now,
       last_update_instant: now,
 
@@ -151,6 +161,7 @@ impl<'a> Sleigh<'a> {
       max_velocity: Point::new(200.0, 200.0),
       max_acceleration: Point::new(1000.0, 1000.0),
       reindeer_offset: reindeer_offset,
+      electrocuted_offset: Point::new(-3.0, -2.0),
       shield_offset: Point::new(-12.0, -17.0),
       countdown_counter_offset_x: -10.0,
       frame_speed: 14.0,
@@ -161,6 +172,7 @@ impl<'a> Sleigh<'a> {
       drunk_duration: std::time::Duration::from_millis(15000),
       invincible_duration: std::time::Duration::from_millis(3000),
       immobile_duration: std::time::Duration::from_millis(5000),
+      electrocuted_duration: std::time::Duration::from_millis(1000),
       invincible_blink_period_duration: std::time::Duration::from_millis(500),
       menu_period: Point::new(30.0, 20.0),
       menu_offset_angle: Point::new(rand::thread_rng().gen_range(0.0, 2.0 * std::f64::consts::PI),
@@ -310,6 +322,11 @@ impl<'a> Sleigh<'a> {
     self.invincible_reset_instant = std::time::Instant::now() + self.invincible_duration;
   }
 
+  pub fn start_electrocuted(&mut self) {
+    self.electrocuted = true;
+    self.electrocuted_reset_instant = std::time::Instant::now() + self.electrocuted_duration;
+  }
+
   pub fn start_invincible_and_immobile(&mut self) {
     self.invincible = true;
     self.immobile = true;
@@ -331,6 +348,7 @@ impl<'a> Sleigh<'a> {
     if self.drunk && (now >= self.drunk_reset_instant) { self.drunk = false; }
     if self.invincible && (now >= self.invincible_reset_instant) { self.invincible = false; }
     if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
+    if self.electrocuted && (now >= self.electrocuted_reset_instant) { self.electrocuted = false; }
 
     if self.game_mode == game::GameMode::Menu {
       let seconds_since_menu_start = now.duration_since(self.menu_start_instant).as_secs_f64();
@@ -416,13 +434,39 @@ impl<'a> Sleigh<'a> {
         level: &level::Level) {
     if self.invincible_blink { return; }
 
-    let mut position = self.position;
-    self.sleigh_image.draw(canvas, position, self.sleigh_frame);
-    position.x += self.sleigh_image.width() + self.reindeer_offset.x;
-    position.y += self.reindeer_offset.y;
-    self.reindeer_image.draw(canvas, position, self.reindeer_frame);
-    position.x -= self.reindeer_offset.x;
-    self.reindeer_image.draw(canvas, position, self.reindeer_frame);
+    if self.electrocuted {
+      let electrocuted_sleigh_offset = Point::new(
+          self.electrocuted_offset.x
+          - (self.electrocuted_sleigh_image.width() - self.sleigh_image.width()) / 2.0,
+          self.electrocuted_offset.y
+          - (self.electrocuted_sleigh_image.height() - self.sleigh_image.height()) / 2.0);
+      let electrocuted_reindeer_offset = Point::new(
+          self.electrocuted_offset.x
+          - (self.electrocuted_reindeer_image.width() - self.reindeer_image.width()) / 2.0,
+          self.electrocuted_offset.y
+          - (self.electrocuted_reindeer_image.height() - self.reindeer_image.height()) / 2.0);
+      self.electrocuted_sleigh_image.draw(canvas, Point::new(
+            self.position.x + electrocuted_sleigh_offset.x,
+            self.position.y + electrocuted_sleigh_offset.y),
+          self.sleigh_frame);
+      self.electrocuted_reindeer_image.draw(canvas, Point::new(
+            self.position.x + self.sleigh_image.width() + self.reindeer_offset.x
+            + electrocuted_reindeer_offset.x,
+            self.position.y + self.reindeer_offset.y + electrocuted_reindeer_offset.y),
+          self.reindeer_frame);
+      self.electrocuted_reindeer_image.draw(canvas, Point::new(
+            self.position.x + self.sleigh_image.width() + electrocuted_reindeer_offset.x,
+            self.position.y + self.reindeer_offset.y + electrocuted_reindeer_offset.y),
+          self.reindeer_frame);
+    }
+
+    self.sleigh_image.draw(canvas, self.position, self.sleigh_frame);
+    self.reindeer_image.draw(canvas,
+        Point::new(self.position.x + self.sleigh_image.width() + self.reindeer_offset.x,
+          self.position.y + self.reindeer_offset.y), self.reindeer_frame);
+    self.reindeer_image.draw(canvas,
+        Point::new(self.position.x + self.sleigh_image.width(),
+          self.position.y + self.reindeer_offset.y), self.reindeer_frame);
 
     for gift in &self.gifts { gift.draw(canvas, level); }
     for star in &self.stars { star.draw(canvas); }
