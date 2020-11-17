@@ -273,10 +273,10 @@ impl<'a> Level<'a> {
         };
 
         collided_with_level_sound.play_with_position(self.canvas_size, sleigh.position);
-        sleigh.collide_with_level_tile();
         score.add_damage_points(self.sleigh_collided_with_tile_damage_points);
         landscape.pause_scrolling(now + sleigh.immobile_duration);
         self.pause_scrolling(now + sleigh.immobile_duration);
+        sleigh.start_invincible_and_immobile();
       }
 
       for npc in &mut self.npcs {

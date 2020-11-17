@@ -159,7 +159,7 @@ impl<'a> Sleigh<'a> {
       bonus_duration: std::time::Duration::from_millis(15000),
       shield_duration: std::time::Duration::from_millis(15000),
       drunk_duration: std::time::Duration::from_millis(15000),
-      invincible_duration: std::time::Duration::from_millis(8000),
+      invincible_duration: std::time::Duration::from_millis(3000),
       immobile_duration: std::time::Duration::from_millis(5000),
       invincible_blink_periods: 16,
       menu_period: Point::new(30.0, 20.0),
@@ -305,6 +305,22 @@ impl<'a> Sleigh<'a> {
     self.drunk_reset_instant = std::time::Instant::now() + self.drunk_duration;
   }
 
+  pub fn start_invincible(&mut self) {
+    self.invincible = true;
+    self.invincible_reset_instant = std::time::Instant::now() + self.invincible_duration;
+  }
+
+  pub fn start_invincible_and_immobile(&mut self) {
+    self.invincible = true;
+    self.immobile = true;
+    self.invincible_reset_instant = std::time::Instant::now() + self.immobile_duration
+        + self.invincible_duration;
+    self.immobile_reset_instant = std::time::Instant::now() + self.immobile_duration;
+    self.velocity = Point::new(0.0, -self.max_velocity.y);
+    self.velocity_point1 = self.velocity;
+    self.velocity_point2 = self.velocity;
+  }
+
   pub fn do_logic(&mut self, score: &mut ui::Score, level: &mut level::Level) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
@@ -387,17 +403,6 @@ impl<'a> Sleigh<'a> {
     if self.immobile && (now >= self.immobile_reset_instant) { self.immobile = false; }
 
     self.last_update_instant = now;
-  }
-
-  pub fn collide_with_level_tile(&mut self) {
-    let now = std::time::Instant::now();
-    self.invincible = true;
-    self.immobile = true;
-    self.invincible_reset_instant = now + self.invincible_duration;
-    self.immobile_reset_instant = now + self.immobile_duration;
-    self.velocity = Point::new(0.0, -self.max_velocity.y);
-    self.velocity_point1 = self.velocity;
-    self.velocity_point2 = self.velocity;
   }
 
   pub fn collides_with_image(&self, image: &asset::Image, position: Point, frame: f64) -> bool {
