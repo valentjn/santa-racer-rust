@@ -9,10 +9,10 @@ use crate::*;
 use crate::asset::Point;
 
 pub trait Npc {
-  fn do_logic(&mut self, level_offset_x: f64, sleigh: &sleigh::Sleigh);
+  fn do_logic(&mut self, level_offset_x: f64, level_scroll_speed_x: f64, sleigh: &sleigh::Sleigh);
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
       level_offset_x: f64, sleigh: &mut sleigh::Sleigh);
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level);
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64);
 
   fn tile(&self) -> (usize, usize);
   fn z_order(&self) -> f64;
@@ -24,6 +24,7 @@ struct NpcBase<'a> {
   level_tile_size: Point,
 
   tile: (usize, usize),
+  size: Point,
   position: Point,
   velocity: Point,
   acceleration: Point,
@@ -35,6 +36,9 @@ struct NpcBase<'a> {
 
 struct Angel<'a> {
   npc_base: NpcBase<'a>,
+  sound: &'a asset::Sound,
+
+  damage_points: f64,
 }
 
 struct Balloon<'a> {
@@ -51,6 +55,9 @@ struct Balloon<'a> {
 
 struct Cloud<'a> {
   npc_base: NpcBase<'a>,
+  sound: &'a asset::Sound,
+
+  damage_points: f64,
 }
 
 struct Finish<'a> {
@@ -59,10 +66,30 @@ struct Finish<'a> {
 
 struct Goblin<'a> {
   npc_base: NpcBase<'a>,
+  snowball_image: &'a asset::Image<'a>,
+  throw_snowball_sound: &'a asset::Sound,
+  collision_sound: &'a asset::Sound,
+
+  snowballs: Vec<NpcBase<'a>>,
+  next_throw_snowball_instant: std::time::Instant,
+
+  snowball_velocity: Point,
+  snowball_acceleration: Point,
+  damage_points: f64,
+  throw_snowball_period_duration: std::time::Duration,
 }
 
 struct Snowman<'a> {
   npc_base: NpcBase<'a>,
+  launch_sound: &'a asset::Sound,
+  collision_sound: &'a asset::Sound,
+
+  launched: bool,
+  stars: Vec<sleigh::Star<'a>>,
+
+  launch_velocity: Point,
+  launch_frame_speed: f64,
+  damage_points: f64,
 }
 
 enum BalloonType {
@@ -101,16 +128,17 @@ pub fn new_npc<'a>(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Le
 }
 
 impl<'a> NpcBase<'a> {
-  pub fn new(image: &'a asset::Image<'a>, level: &level::Level, tile: (usize, usize),
-        frame_speed: f64) -> NpcBase<'a> {
+  pub fn new(image: &'a asset::Image<'a>, canvas_size: Point, level_tile_size: Point,
+        tile: (usize, usize), frame_speed: f64) -> NpcBase<'a> {
     return NpcBase{
       image: image,
-      canvas_size: level.canvas_size,
-      level_tile_size: level.tile_size,
+      canvas_size: canvas_size,
+      level_tile_size: level_tile_size,
 
       tile: tile,
-      position: Point::new(((tile.0 as f64) + 0.5) * level.tile_size.x - image.width() / 2.0,
-        ((tile.1 as f64) + 0.5) * level.tile_size.y - image.height() / 2.0),
+      size: image.size(),
+      position: Point::new(((tile.0 as f64) + 0.5) * level_tile_size.x - image.width() / 2.0,
+        ((tile.1 as f64) + 0.5) * level_tile_size.y - image.height() / 2.0),
       velocity: Point::zero(),
       acceleration: Point::zero(),
       frame: 0.0,
@@ -137,13 +165,13 @@ impl<'a> NpcBase<'a> {
     self.last_update_instant = now;
   }
 
-  fn collides_with_sleigh(&mut self, level_offset_x: f64, sleigh: &mut sleigh::Sleigh) -> bool {
+  fn collides_with_sleigh(&self, level_offset_x: f64, sleigh: &mut sleigh::Sleigh) -> bool {
     return sleigh.collides_with_image(self.image,
         Point::new(self.position.x - level_offset_x, self.position.y), self.frame);
   }
 
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    self.image.draw(canvas, Point::new(self.position.x - level.offset_x, self.position.y),
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
+    self.image.draw(canvas, Point::new(self.position.x - level_offset_x, self.position.y),
         self.frame);
   }
 }
@@ -152,23 +180,33 @@ impl<'a> Angel<'a> {
   pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
         tile: (usize, usize)) -> Angel<'a> {
     return Angel{
-      npc_base: NpcBase::new(asset_library.get_image("angel"), level, tile, 13.0),
+      npc_base: NpcBase::new(asset_library.get_image("angel"),
+          level.canvas_size, level.tile_size, tile, 13.0),
+      sound: asset_library.get_sound("sleighCollidedWithNpc"),
+
+      damage_points: 20.0,
     };
   }
 }
 
 impl<'a> Npc for Angel<'a> {
-  fn do_logic(&mut self, _level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
+  fn do_logic(&mut self, _level_offset_x: f64, _level_scroll_speed_x: f64,
+        _sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    //return self.npc_base.collides_with_sleigh(sleigh);
+    if !sleigh.invincible && !sleigh.shield
+          && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
+      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      score.add_damage_points(self.damage_points);
+      sleigh.start_invincible();
+    }
   }
 
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    self.npc_base.draw(canvas, level);
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
+    self.npc_base.draw(canvas, level_offset_x);
   }
 
   fn tile(&self) -> (usize, usize) {
@@ -194,7 +232,8 @@ impl<'a> Balloon<'a> {
         else { image_name };
 
     return Balloon{
-      npc_base: NpcBase::new(asset_library.get_image(image_name), level, tile, 10.0),
+      npc_base: NpcBase::new(asset_library.get_image(image_name),
+          level.canvas_size, level.tile_size, tile, 10.0),
       sound: asset_library.get_sound(sound_name),
 
       balloon_type: balloon_type,
@@ -208,7 +247,8 @@ impl<'a> Balloon<'a> {
 }
 
 impl<'a> Npc for Balloon<'a> {
-  fn do_logic(&mut self, level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
+  fn do_logic(&mut self, level_offset_x: f64, _level_scroll_speed_x: f64,
+        _sleigh: &sleigh::Sleigh) {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.npc_base.last_update_instant).as_secs_f64();
 
@@ -249,8 +289,8 @@ impl<'a> Npc for Balloon<'a> {
     }
   }
 
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    if self.visible { self.npc_base.draw(canvas, level); }
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
+    if self.visible { self.npc_base.draw(canvas, level_offset_x); }
   }
 
   fn tile(&self) -> (usize, usize) {
@@ -266,23 +306,34 @@ impl<'a> Cloud<'a> {
   pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
         tile: (usize, usize)) -> Cloud<'a> {
     return Cloud{
-      npc_base: NpcBase::new(asset_library.get_image("cloud"), level, tile, 0.0),
+      npc_base: NpcBase::new(asset_library.get_image("cloud"),
+          level.canvas_size, level.tile_size, tile, 0.0),
+      sound: asset_library.get_sound("sleighCollidedWithCloud"),
+
+      damage_points: 20.0,
     };
   }
 }
 
 impl<'a> Npc for Cloud<'a> {
-  fn do_logic(&mut self, _level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
+  fn do_logic(&mut self, _level_offset_x: f64, _level_scroll_speed_x: f64,
+        _sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    //return self.npc_base.collides_with_sleigh(sleigh);
+    if !sleigh.invincible && !sleigh.shield
+          && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
+      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      score.add_damage_points(self.damage_points);
+      sleigh.start_invincible();
+      sleigh.start_electrocuted();
+    }
   }
 
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    self.npc_base.draw(canvas, level);
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
+    self.npc_base.draw(canvas, level_offset_x);
   }
 
   fn tile(&self) -> (usize, usize) {
@@ -298,7 +349,8 @@ impl<'a> Finish<'a> {
   pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
         tile: (usize, usize)) -> Finish<'a> {
     return Finish{
-      npc_base: NpcBase::new(asset_library.get_image("finish"), level, tile, 0.0),
+      npc_base: NpcBase::new(asset_library.get_image("finish"),
+          level.canvas_size, level.tile_size, tile, 0.0),
     };
   }
 
@@ -308,17 +360,21 @@ impl<'a> Finish<'a> {
 }
 
 impl<'a> Npc for Finish<'a> {
-  fn do_logic(&mut self, level_offset_x: f64, sleigh: &sleigh::Sleigh) {
+  fn do_logic(&mut self, _level_offset_x: f64, _level_scroll_speed_x: f64,
+        _sleigh: &sleigh::Sleigh) {
     self.npc_base.do_logic();
   }
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    //return self.npc_base.collides_with_sleigh(sleigh);
+    if level_offset_x + sleigh.position.x + sleigh.size.x
+          >= self.npc_base.position.x + self.npc_base.size.x / 2.0 {
+      score.set_finished(true);
+    }
   }
 
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    self.npc_base.draw(canvas, level);
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
+    self.npc_base.draw(canvas, level_offset_x);
   }
 
   fn tile(&self) -> (usize, usize) {
@@ -333,24 +389,81 @@ impl<'a> Npc for Finish<'a> {
 impl<'a> Goblin<'a> {
   pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
         tile: (usize, usize)) -> Goblin<'a> {
+    let image = asset_library.get_image("goblin");
+    let frame_speed = 12.0;
+    let throw_snowball_frame = 13.0;
+
     return Goblin{
-      npc_base: NpcBase::new(asset_library.get_image("goblin"), level, tile, 12.0),
+      npc_base: NpcBase::new(image, level.canvas_size, level.tile_size, tile, frame_speed),
+      snowball_image: asset_library.get_image("goblinSnowball"),
+      throw_snowball_sound: asset_library.get_sound("goblinThrowSnowball"),
+      collision_sound: asset_library.get_sound("sleighCollidedWithNpc"),
+
+      snowballs: Vec::new(),
+      next_throw_snowball_instant: std::time::Instant::now() + std::time::Duration::from_secs_f64(
+        throw_snowball_frame / frame_speed),
+
+      snowball_velocity: Point::new(-200.0, -250.0),
+      snowball_acceleration: Point::new(0.0, 80.0),
+      damage_points: 20.0,
+      throw_snowball_period_duration: std::time::Duration::from_secs_f64(
+          (image.total_number_of_frames() as f64) / frame_speed),
     };
   }
 }
 
 impl<'a> Npc for Goblin<'a> {
-  fn do_logic(&mut self, level_offset_x: f64, _sleigh: &sleigh::Sleigh) {
+  fn do_logic(&mut self, level_offset_x: f64, _level_scroll_speed_x: f64,
+        _sleigh: &sleigh::Sleigh) {
+    let now = std::time::Instant::now();
+
+    if now >= self.next_throw_snowball_instant {
+      self.throw_snowball_sound.play_with_level_position(self.npc_base.canvas_size,
+          level_offset_x, self.npc_base.position);
+
+      let mut snowball = NpcBase::new(self.snowball_image, self.npc_base.canvas_size,
+          self.npc_base.level_tile_size, self.npc_base.tile, 0.0);
+      snowball.position = self.npc_base.position;
+      snowball.velocity = self.snowball_velocity;
+      snowball.acceleration = self.snowball_acceleration;
+      self.snowballs.push(snowball);
+
+      while self.next_throw_snowball_instant <= now {
+        self.next_throw_snowball_instant += self.throw_snowball_period_duration;
+      }
+    }
+
+    for snowball in &mut self.snowballs { snowball.do_logic(); }
     self.npc_base.do_logic();
   }
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    //return self.npc_base.collides_with_sleigh(sleigh);
+    if sleigh.invincible || sleigh.shield { return; }
+    let mut collides = self.npc_base.collides_with_sleigh(level_offset_x, sleigh);
+
+    if !collides {
+      for snowball in &self.snowballs {
+        if snowball.collides_with_sleigh(level_offset_x, sleigh) {
+          collides = true;
+          break;
+        }
+      }
+    }
+
+    if collides {
+      self.collision_sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      score.add_damage_points(self.damage_points);
+      sleigh.start_invincible();
+    }
   }
 
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    self.npc_base.draw(canvas, level);
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
+    self.npc_base.draw(canvas, level_offset_x);
+
+    for snowball in &self.snowballs {
+      snowball.draw(canvas, level_offset_x);
+    }
   }
 
   fn tile(&self) -> (usize, usize) {
@@ -365,24 +478,77 @@ impl<'a> Npc for Goblin<'a> {
 impl<'a> Snowman<'a> {
   pub fn new(asset_library: &'a asset::AssetLibrary<'a>, level: &level::Level,
         tile: (usize, usize)) -> Snowman<'a> {
+    let mut stars = Vec::new();
+
+    for _ in 0 .. 20 {
+      let mut star = sleigh::Star::new(asset_library);
+      star.small_probability = 0.5;
+      star.min_offset = Point::new(-12.0, -32.0);
+      star.max_offset = Point::new(-7.0, -27.0);
+      stars.push(star);
+    }
+
     return Snowman{
-      npc_base: NpcBase::new(asset_library.get_image("snowman"), level, tile, 8.0),
+      npc_base: NpcBase::new(asset_library.get_image("snowman"),
+          level.canvas_size, level.tile_size, tile, 0.0),
+      launch_sound: asset_library.get_sound("snowmanLaunch"),
+      collision_sound: asset_library.get_sound("sleighCollidedWithNpc"),
+
+      launched: false,
+      stars: stars,
+
+      launch_velocity: Point::new(-100.0, -150.0),
+      launch_frame_speed: 8.0,
+      damage_points: 20.0,
     };
   }
 }
 
 impl<'a> Npc for Snowman<'a> {
-  fn do_logic(&mut self, level_offset_x: f64, sleigh: &sleigh::Sleigh) {
+  fn do_logic(&mut self, level_offset_x: f64, level_scroll_speed_x: f64, sleigh: &sleigh::Sleigh) {
+    if self.launched {
+      for star in &mut self.stars {
+        star.do_logic(self.npc_base.position, self.npc_base.size, false);
+      }
+    } else {
+      let sleigh_same_y_as_sleigh_seconds = (sleigh.position.y - self.npc_base.position.y)
+          / self.launch_velocity.y;
+      let future_sleigh_position_x = level_offset_x + sleigh.position.x + sleigh.size.x / 2.0
+          + sleigh_same_y_as_sleigh_seconds * level_scroll_speed_x;
+      let future_snowman_position_x = self.npc_base.position.x + self.npc_base.size.x / 2.0
+          + sleigh_same_y_as_sleigh_seconds * self.launch_velocity.x;
+
+      if future_sleigh_position_x >= future_snowman_position_x {
+        self.launch_sound.play_with_level_position(self.npc_base.canvas_size, level_offset_x,
+            self.npc_base.position);
+        self.launched = true;
+        self.npc_base.velocity = self.launch_velocity;
+        self.npc_base.frame_speed = self.launch_frame_speed;
+      }
+    }
+
     self.npc_base.do_logic();
+
+    let last_frame = (self.npc_base.image.total_number_of_frames() as f64) - 1.0;
+    if self.npc_base.frame > last_frame { self.npc_base.frame = last_frame; }
   }
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    //return self.npc_base.collides_with_sleigh(sleigh);
+    if !sleigh.invincible && !sleigh.shield
+          && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
+      self.collision_sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      score.add_damage_points(self.damage_points);
+      sleigh.start_invincible();
+    }
   }
 
-  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level: &level::Level) {
-    self.npc_base.draw(canvas, level);
+  fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
+    if self.launched {
+      for star in &self.stars { star.draw(canvas, level_offset_x); }
+    }
+
+    self.npc_base.draw(canvas, level_offset_x);
   }
 
   fn tile(&self) -> (usize, usize) {

@@ -19,6 +19,7 @@ pub struct Score<'a> {
   gift_points: f64,
   damage_points: f64,
   remaining_duration: std::time::Duration,
+  finished: bool,
   game_start_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
@@ -78,6 +79,7 @@ impl<'a> Score<'a> {
       gift_points: 0.0,
       damage_points: 0.0,
       remaining_duration: std::time::Duration::from_millis(0),
+      finished: false,
       game_start_instant: now,
       last_update_instant: now,
 
@@ -146,6 +148,14 @@ impl<'a> Score<'a> {
       font.draw_monospace(canvas, Point::new(self.time_position_x + self.margin_x,
           self.position_y), format!("{}:{:02}", minutes, seconds), Alignment::CenterLeft);
     }
+  }
+
+  pub fn finished(&self) -> bool {
+    return self.finished;
+  }
+
+  pub fn set_finished(&mut self, finished: bool) {
+    self.finished = finished;
   }
 }
 

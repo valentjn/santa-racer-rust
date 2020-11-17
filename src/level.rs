@@ -321,7 +321,7 @@ impl<'a> Level<'a> {
     self.npcs.sort_unstable_by(|x, y| x.z_order().partial_cmp(&y.z_order()).expect(
         "Could not compare NPC z-orders"));
 
-    for npc in &mut self.npcs { npc.do_logic(self.offset_x, sleigh); }
+    for npc in &mut self.npcs { npc.do_logic(self.offset_x, self.scroll_speed_x, sleigh); }
 
     self.last_update_instant = now;
   }
@@ -340,7 +340,7 @@ impl<'a> Level<'a> {
 
   pub fn draw(&self, canvas: &mut sdl2::render::WindowCanvas) {
     for npc in &self.npcs {
-      if npc.z_order() < 0.0 { npc.draw(canvas, self); }
+      if npc.z_order() < 0.0 { npc.draw(canvas, self.offset_x); }
     }
 
     for (tile_x, tile_y) in self.visible_tiles_iter() {
@@ -352,7 +352,7 @@ impl<'a> Level<'a> {
     }
 
     for npc in &self.npcs {
-      if npc.z_order() >= 0.0 { npc.draw(canvas, self); }
+      if npc.z_order() >= 0.0 { npc.draw(canvas, self.offset_x); }
     }
   }
 

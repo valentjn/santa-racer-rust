@@ -79,7 +79,7 @@ pub struct Sleigh<'a> {
   game_start_position: Point,
 }
 
-struct Star<'a> {
+pub struct Star<'a> {
   image: &'a asset::Image<'a>,
   small_image: &'a asset::Image<'a>,
   drunk_image: &'a asset::Image<'a>,
@@ -90,10 +90,11 @@ struct Star<'a> {
   max_frame: f64,
   small: bool,
   drunk: bool,
+  pub small_probability: f64,
   last_update_instant: std::time::Instant,
 
-  min_offset: Point,
-  max_offset: Point,
+  pub min_offset: Point,
+  pub max_offset: Point,
   frame_speed: f64,
   max_max_frame: f64,
 }
@@ -108,9 +109,7 @@ impl<'a> Sleigh<'a> {
     let now = std::time::Instant::now();
     let mut stars: Vec<Star<'a>> = Vec::new();
 
-    for _ in 0 .. 67 {
-      stars.push(Star::new(asset_library));
-    }
+    for _ in 0 .. 67 { stars.push(Star::new(asset_library)); }
 
     return Sleigh{
       sleigh_image: sleigh_image,
@@ -469,7 +468,7 @@ impl<'a> Sleigh<'a> {
           self.position.y + self.reindeer_offset.y), self.reindeer_frame);
 
     for gift in &self.gifts { gift.draw(canvas, level); }
-    for star in &self.stars { star.draw(canvas); }
+    for star in &self.stars { star.draw(canvas, 0.0); }
 
     if self.shield {
       self.shield_image.draw(canvas, Point::new(self.position.x + self.shield_offset.x,
@@ -497,16 +496,17 @@ impl<'a> Star<'a> {
       max_frame: 0.0,
       small: false,
       drunk: false,
+      small_probability: 0.5,
       last_update_instant: std::time::Instant::now(),
 
-      min_offset: Point::new(10.0, 0.0),
-      max_offset: Point::new(150.0, 10.0),
+      min_offset: Point::new(-150.0, -10.0),
+      max_offset: Point::new(-10.0, 0.0),
       frame_speed: 34.0,
       max_max_frame: 30.0,
     };
   }
 
-  fn do_logic(&mut self, sleigh_position: Point, sleigh_size: Point, drunk: bool) {
+  pub fn do_logic(&mut self, sleigh_position: Point, sleigh_size: Point, drunk: bool) {
     if self.frame == -1.0 { self.reset_in_between(sleigh_position, sleigh_size, drunk); }
 
     let now = std::time::Instant::now();
@@ -522,14 +522,23 @@ impl<'a> Star<'a> {
   }
 
   fn reset_from_beginning(&mut self, sleigh_position: Point, sleigh_size: Point, drunk: bool) {
-    self.position = Point::new(sleigh_position.x + sleigh_size.x
-        - rand::thread_rng().gen_range(self.min_offset.x, self.max_offset.x),
-        sleigh_position.y + sleigh_size.y
-        - rand::thread_rng().gen_range(self.min_offset.y, self.max_offset.y));
+    let offset_x = if self.min_offset.x < self.max_offset.x {
+          rand::thread_rng().gen_range(self.min_offset.x, self.max_offset.x)
+        } else {
+          self.min_offset.x
+        };
+    let offset_y = if self.min_offset.y < self.max_offset.y {
+          rand::thread_rng().gen_range(self.min_offset.y, self.max_offset.y)
+        } else {
+          self.min_offset.y
+        };
+
+    self.position = Point::new(sleigh_position.x + sleigh_size.x + offset_x,
+        sleigh_position.y + sleigh_size.y + offset_y);
     self.frame = 0.0;
     self.max_frame = rand::thread_rng().gen_range(
         self.image.total_number_of_frames() as f64, self.max_max_frame);
-    self.small = rand::thread_rng().gen_range(0.0, 1.0) >= 0.5;
+    self.small = rand::thread_rng().gen_range(0.0, 1.0) < self.small_probability;
     self.drunk = drunk;
     self.last_update_instant = std::time::Instant::now();
   }
@@ -539,12 +548,14 @@ impl<'a> Star<'a> {
     self.frame = rand::thread_rng().gen_range(0.0, self.max_max_frame);
   }
 
-  fn draw<RenderTarget: sdl2::render::RenderTarget>(
-        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
+  pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
+        &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level_offset_x: f64) {
     if self.frame >= self.image.total_number_of_frames() as f64 { return; }
 
     let image = if self.small { if self.drunk { self.small_drunk_image } else { self.small_image } }
         else { if self.drunk { self.drunk_image } else { self.image } };
-    image.draw(canvas, self.position, self.frame);
+    let position = Point::new(self.position.x - level_offset_x, self.position.y);
+
+    image.draw(canvas, position, self.frame);
   }
 }
