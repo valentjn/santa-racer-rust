@@ -65,7 +65,7 @@ pub struct Sleigh<'a> {
   drunk_duration: std::time::Duration,
   invincible_duration: std::time::Duration,
   pub immobile_duration: std::time::Duration,
-  invincible_blink_periods: i32,
+  invincible_blink_period_duration: std::time::Duration,
   menu_period: Point,
   menu_offset_angle: Point,
   menu_min_position: Point,
@@ -161,7 +161,7 @@ impl<'a> Sleigh<'a> {
       drunk_duration: std::time::Duration::from_millis(15000),
       invincible_duration: std::time::Duration::from_millis(3000),
       immobile_duration: std::time::Duration::from_millis(5000),
-      invincible_blink_periods: 16,
+      invincible_blink_period_duration: std::time::Duration::from_millis(500),
       menu_period: Point::new(30.0, 20.0),
       menu_offset_angle: Point::new(rand::thread_rng().gen_range(0.0, 2.0 * std::f64::consts::PI),
         rand::thread_rng().gen_range(0.0, 2.0 * std::f64::consts::PI)),
@@ -378,9 +378,8 @@ impl<'a> Sleigh<'a> {
     }
 
     if self.invincible {
-      self.invincible_blink = (((self.invincible_reset_instant - now).as_secs_f64()
-            / self.invincible_duration.as_secs_f64())
-          * (self.invincible_blink_periods as f64)) % 1.0 >= 0.5;
+      self.invincible_blink = ((self.invincible_reset_instant - now).as_secs_f64()
+          / self.invincible_blink_period_duration.as_secs_f64()) % 1.0 >= 0.5;
     }
 
     {
