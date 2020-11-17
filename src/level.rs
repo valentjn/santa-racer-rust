@@ -265,7 +265,7 @@ impl<'a> Level<'a> {
           self.min_bell_sound_duration, self.max_bell_sound_duration);
     }
 
-    if (self.game_mode == game::GameMode::Running) && !sleigh.immobile && !sleigh.counting_down {
+    if (self.game_mode == game::GameMode::Running) && !sleigh.counting_down && !sleigh.immobile {
       if self.sleigh_collides_with_tile(sleigh) {
         let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
           0 => self.sleigh_collided_with_tile_sound1,
@@ -327,8 +327,6 @@ impl<'a> Level<'a> {
   }
 
   fn sleigh_collides_with_tile(&self, sleigh: &sleigh::Sleigh) -> bool {
-    if sleigh.invincible { return false; }
-
     for (tile_x, tile_y) in self.visible_tiles_iter() {
       let tile_frame = self.tile_map[tile_y][tile_x];
       if tile_frame < 0.0 { continue; }
