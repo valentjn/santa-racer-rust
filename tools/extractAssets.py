@@ -25,7 +25,7 @@ fileNames = {
       "2_3008_0.bmp" : "smallStar.png",
       "2_3009_0.bmp" : "snowman.png",
       "2_3010_0.bmp" : "goblin.png",
-      "2_3011_0.bmp" : "snowball.png",
+      "2_3011_0.bmp" : "goblinSnowball.png",
       "2_3013_0.bmp" : "font.png",
       #"2_3014_0.bmp" : "goblin.png",
       "2_3015_0.bmp" : "electrocutedSleigh.png",
