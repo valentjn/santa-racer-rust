@@ -181,7 +181,7 @@ impl<'a> Angel<'a> {
         tile: (usize, usize)) -> Angel<'a> {
     return Angel{
       npc_base: NpcBase::new(asset_library.get_image("angel"),
-          level.canvas_size, level.tile_size, tile, 13.0),
+          level.canvas_size(), level.tile_size(), tile, 13.0),
       sound: asset_library.get_sound("sleighCollidedWithNpc"),
 
       damage_points: 20.0,
@@ -197,9 +197,9 @@ impl<'a> Npc for Angel<'a> {
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    if !sleigh.invincible && !sleigh.shield
+    if !sleigh.invincible() && !sleigh.shield()
           && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
-      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position());
       score.add_damage_points(self.damage_points);
       sleigh.start_invincible();
     }
@@ -233,7 +233,7 @@ impl<'a> Balloon<'a> {
 
     return Balloon{
       npc_base: NpcBase::new(asset_library.get_image(image_name),
-          level.canvas_size, level.tile_size, tile, 10.0),
+          level.canvas_size(), level.tile_size(), tile, 10.0),
       sound: asset_library.get_sound(sound_name),
 
       balloon_type: balloon_type,
@@ -276,7 +276,7 @@ impl<'a> Npc for Balloon<'a> {
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
     if self.visible && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
-      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position());
       self.visible = false;
 
       match self.balloon_type {
@@ -307,7 +307,7 @@ impl<'a> Cloud<'a> {
         tile: (usize, usize)) -> Cloud<'a> {
     return Cloud{
       npc_base: NpcBase::new(asset_library.get_image("cloud"),
-          level.canvas_size, level.tile_size, tile, 0.0),
+          level.canvas_size(), level.tile_size(), tile, 0.0),
       sound: asset_library.get_sound("sleighCollidedWithCloud"),
 
       damage_points: 20.0,
@@ -323,9 +323,9 @@ impl<'a> Npc for Cloud<'a> {
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    if !sleigh.invincible && !sleigh.shield
+    if !sleigh.invincible() && !sleigh.shield()
           && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
-      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      self.sound.play_with_position(self.npc_base.canvas_size, sleigh.position());
       score.add_damage_points(self.damage_points);
       sleigh.start_invincible();
       sleigh.start_electrocuted();
@@ -350,7 +350,7 @@ impl<'a> Finish<'a> {
         tile: (usize, usize)) -> Finish<'a> {
     return Finish{
       npc_base: NpcBase::new(asset_library.get_image("finish"),
-          level.canvas_size, level.tile_size, tile, 0.0),
+          level.canvas_size(), level.tile_size(), tile, 0.0),
     };
   }
 
@@ -367,7 +367,7 @@ impl<'a> Npc for Finish<'a> {
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    if level_offset_x + sleigh.position.x + sleigh.size.x
+    if level_offset_x + sleigh.position().x + sleigh.size().x
           >= self.npc_base.position.x + self.npc_base.size.x / 2.0 {
       score.set_finished(true);
     }
@@ -394,7 +394,7 @@ impl<'a> Goblin<'a> {
     let throw_snowball_frame = 13.0;
 
     return Goblin{
-      npc_base: NpcBase::new(image, level.canvas_size, level.tile_size, tile, frame_speed),
+      npc_base: NpcBase::new(image, level.canvas_size(), level.tile_size(), tile, frame_speed),
       snowball_image: asset_library.get_image("goblinSnowball"),
       throw_snowball_sound: asset_library.get_sound("goblinThrowSnowball"),
       collision_sound: asset_library.get_sound("sleighCollidedWithNpc"),
@@ -439,7 +439,7 @@ impl<'a> Npc for Goblin<'a> {
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    if sleigh.invincible || sleigh.shield { return; }
+    if sleigh.invincible() || sleigh.shield() { return; }
     let mut collides = self.npc_base.collides_with_sleigh(level_offset_x, sleigh);
 
     if !collides {
@@ -452,7 +452,7 @@ impl<'a> Npc for Goblin<'a> {
     }
 
     if collides {
-      self.collision_sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      self.collision_sound.play_with_position(self.npc_base.canvas_size, sleigh.position());
       score.add_damage_points(self.damage_points);
       sleigh.start_invincible();
     }
@@ -482,15 +482,15 @@ impl<'a> Snowman<'a> {
 
     for _ in 0 .. 20 {
       let mut star = sleigh::Star::new(asset_library);
-      star.small_probability = 0.5;
-      star.min_offset = Point::new(-12.0, -32.0);
-      star.max_offset = Point::new(-7.0, -27.0);
+      star.set_small_probability(0.5);
+      star.set_min_offset(Point::new(-12.0, -32.0));
+      star.set_max_offset(Point::new(-7.0, -27.0));
       stars.push(star);
     }
 
     return Snowman{
       npc_base: NpcBase::new(asset_library.get_image("snowman"),
-          level.canvas_size, level.tile_size, tile, 0.0),
+          level.canvas_size(), level.tile_size(), tile, 0.0),
       launch_sound: asset_library.get_sound("snowmanLaunch"),
       collision_sound: asset_library.get_sound("sleighCollidedWithNpc"),
 
@@ -511,9 +511,9 @@ impl<'a> Npc for Snowman<'a> {
         star.do_logic(self.npc_base.position, self.npc_base.size, false);
       }
     } else {
-      let sleigh_same_y_as_sleigh_seconds = (sleigh.position.y - self.npc_base.position.y)
+      let sleigh_same_y_as_sleigh_seconds = (sleigh.position().y - self.npc_base.position.y)
           / self.launch_velocity.y;
-      let future_sleigh_position_x = level_offset_x + sleigh.position.x + sleigh.size.x / 2.0
+      let future_sleigh_position_x = level_offset_x + sleigh.position().x + sleigh.size().x / 2.0
           + sleigh_same_y_as_sleigh_seconds * level_scroll_speed_x;
       let future_snowman_position_x = self.npc_base.position.x + self.npc_base.size.x / 2.0
           + sleigh_same_y_as_sleigh_seconds * self.launch_velocity.x;
@@ -535,9 +535,9 @@ impl<'a> Npc for Snowman<'a> {
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    if !sleigh.invincible && !sleigh.shield
+    if !sleigh.invincible() && !sleigh.shield()
           && self.npc_base.collides_with_sleigh(level_offset_x, sleigh) {
-      self.collision_sound.play_with_position(self.npc_base.canvas_size, sleigh.position);
+      self.collision_sound.play_with_position(self.npc_base.canvas_size, sleigh.position());
       score.add_damage_points(self.damage_points);
       sleigh.start_invincible();
     }

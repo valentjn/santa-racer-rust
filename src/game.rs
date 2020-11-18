@@ -297,7 +297,7 @@ impl<'a> Game<'a> {
         draw_arguments.sleigh.draw(canvas, draw_arguments.font, draw_arguments.level);
         draw_arguments.score.draw(canvas, draw_arguments.font);
         draw_arguments.highscore_table.draw(canvas, draw_arguments.font,
-            &draw_arguments.options.highscores);
+            &draw_arguments.options.highscores());
       },
       _ => {},
     }
@@ -312,7 +312,7 @@ impl<'a> Game<'a> {
 
     if duration_since_last_fps_update >= std::time::Duration::from_millis(1000) {
       self.fps = (self.frame_counter as f64) / duration_since_last_fps_update.as_secs_f64();
-      if self.options.verbose_enabled { println!("FPS: {:.1}", self.fps); }
+      if self.options.verbose_enabled() { println!("FPS: {:.1}", self.fps); }
       self.last_fps_update_instant = now;
       self.frame_counter = 0;
     }

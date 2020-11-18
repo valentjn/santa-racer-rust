@@ -212,10 +212,10 @@ impl<'a> HighscoreTable<'a> {
     for (i, highscore) in highscores.iter().enumerate() {
       let mut dst_point = Point::new(self.position.x + self.inner_margin.x,
           self.position.y + self.inner_margin.y + offset_y * (i as f64));
-      font.draw_monospace(canvas, dst_point, highscore.name.to_string(), Alignment::TopLeft);
+      font.draw_monospace(canvas, dst_point, highscore.name(), Alignment::TopLeft);
 
       dst_point.x = self.position.x + self.size.x - self.inner_margin.y;
-      font.draw_monospace(canvas, dst_point, highscore.score.to_string(), Alignment::TopRight);
+      font.draw_monospace(canvas, dst_point, highscore.score().to_string(), Alignment::TopRight);
     }
   }
 }

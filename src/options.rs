@@ -10,16 +10,16 @@ use serde::Deserialize;
 
 #[derive(Clone)]
 pub struct Options {
-  pub fullscreen_enabled: bool,
-  pub sound_enabled: bool,
-  pub verbose_enabled: bool,
-  pub highscores: Vec<Highscore>,
+  fullscreen_enabled: bool,
+  sound_enabled: bool,
+  verbose_enabled: bool,
+  highscores: Vec<Highscore>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Highscore {
-  pub name: String,
-  pub score: i32,
+  name: String,
+  score: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -91,6 +91,38 @@ impl Options {
 
     return options;
   }
+
+  pub fn fullscreen_enabled(&self) -> bool {
+    return self.fullscreen_enabled;
+  }
+
+  pub fn set_fullscreen_enabled(&mut self, fullscreen_enabled: bool) {
+    self.fullscreen_enabled = fullscreen_enabled;
+  }
+
+  pub fn sound_enabled(&self) -> bool {
+    return self.sound_enabled;
+  }
+
+  pub fn set_sound_enabled(&mut self, sound_enabled: bool) {
+    self.sound_enabled = sound_enabled;
+  }
+
+  pub fn verbose_enabled(&self) -> bool {
+    return self.verbose_enabled;
+  }
+
+  pub fn set_verbose_enabled(&mut self, verbose_enabled: bool) {
+    self.verbose_enabled = verbose_enabled;
+  }
+
+  pub fn highscores(&self) -> &Vec<Highscore> {
+    return &self.highscores;
+  }
+
+  pub fn set_highscores(&mut self, highscores: Vec<Highscore>) {
+    self.highscores = highscores;
+  }
 }
 
 impl Highscore {
@@ -99,5 +131,21 @@ impl Highscore {
       name: name.into(),
       score: score,
     };
+  }
+
+  pub fn name(&self) -> String {
+    return self.name.to_string();
+  }
+
+  pub fn set_name<S: Into<String>>(&mut self, name: S) {
+    self.name = name.into();
+  }
+
+  pub fn score(&self) -> i32 {
+    return self.score;
+  }
+
+  pub fn set_score(&mut self, score: i32) {
+    self.score = score;
   }
 }

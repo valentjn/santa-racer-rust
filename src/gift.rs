@@ -11,9 +11,9 @@ use crate::*;
 use crate::asset::Point;
 
 pub struct Chimney {
-  pub position: Point,
-  pub size: Point,
-  pub frame: f64,
+  position: Point,
+  size: Point,
+  frame: f64,
 }
 
 pub struct Gift<'a> {
@@ -27,11 +27,11 @@ pub struct Gift<'a> {
   collided_with_chimney_sound: &'a asset::Sound,
   collided_with_ground_sound: &'a asset::Sound,
 
-  pub mode: GiftMode,
+  mode: GiftMode,
   bonus: bool,
 
   size: Point,
-  pub position: Point,
+  position: Point,
   velocity: Point,
   acceleration: Point,
   frame: f64,
@@ -50,11 +50,21 @@ pub struct Gift<'a> {
   damage_points: f64,
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum GiftMode {
   Falling,
   ShowingPoints(f64),
   CanBeDeleted,
+}
+
+impl Chimney {
+  pub fn new(position: Point, size: Point, frame: f64) -> Chimney {
+    return Chimney{
+      position: position,
+      size: size,
+      frame: frame,
+    };
+  }
 }
 
 impl<'a> Gift<'a> {
@@ -65,9 +75,9 @@ impl<'a> Gift<'a> {
         rand::thread_rng().gen_range(1, number_of_gift_types)));
     let velocity_y = 50.0;
     let velocity = match difficulty {
-      game::GameDifficulty::Easy => Point::new(level.scroll_speed_x, velocity_y),
-      game::GameDifficulty::Hard => Point::new(sleigh.velocity.x + level.scroll_speed_x,
-        velocity_y + sleigh.velocity.y),
+      game::GameDifficulty::Easy => Point::new(level.scroll_speed_x(), velocity_y),
+      game::GameDifficulty::Hard => Point::new(sleigh.velocity().x + level.scroll_speed_x(),
+        velocity_y + sleigh.velocity().y),
     };
 
     return Gift{
@@ -82,10 +92,11 @@ impl<'a> Gift<'a> {
       collided_with_ground_sound: asset_library.get_sound("giftCollidedWithGround"),
 
       mode: GiftMode::Falling,
-      bonus: sleigh.bonus,
+      bonus: sleigh.bonus(),
 
       size: image.size(),
-      position: Point::new(sleigh.position.x + level.offset_x, sleigh.position.y + sleigh.size.y),
+      position: Point::new(sleigh.position().x + level.offset_x(),
+        sleigh.position().y + sleigh.size().y),
       velocity: velocity,
       acceleration: Point::new(0.0, 200.0),
       frame: rand::thread_rng().gen_range(0, image.total_number_of_frames()) as f64,
@@ -124,12 +135,12 @@ impl<'a> Gift<'a> {
           self.mode = GiftMode::ShowingPoints(gift_points);
           self.frame = 0.0;
           self.collided_with_chimney_sound.play_with_level_position(
-              self.canvas_size, level.offset_x, self.position);
+              self.canvas_size, level.offset_x(), self.position);
           score.add_gift_points(if self.bonus { 2.0 * gift_points } else { gift_points });
         } else if self.has_collided_with_ground() {
           self.mode = GiftMode::CanBeDeleted;
           self.collided_with_ground_sound.play_with_level_position(
-              self.canvas_size, level.offset_x, self.position);
+              self.canvas_size, level.offset_x(), self.position);
           score.add_damage_points(self.damage_points);
         }
       },
@@ -153,10 +164,10 @@ impl<'a> Gift<'a> {
         self.position.y + self.size.y / 2.0);
 
     for (tile_x, tile_y) in level.visible_tiles_iter() {
-      let frame = level.tile_map[tile_y][tile_x];
+      let frame = level.tile(tile_x, tile_y);
       if frame < 0.0 { continue; }
-      let tile_position = Point::new((tile_x as f64) * level.tile_size.x,
-          (tile_y as f64) * level.tile_size.y);
+      let tile_position = Point::new((tile_x as f64) * level.tile_size().x,
+          (tile_y as f64) * level.tile_size().y);
 
       for chimney in chimneys.iter() {
         if (chimney.frame == frame)
@@ -178,7 +189,7 @@ impl<'a> Gift<'a> {
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &level::Level) {
-    let position: Point = Point::new(self.position.x - level.offset_x, self.position.y);
+    let position: Point = Point::new(self.position.x - level.offset_x(), self.position.y);
 
     match self.mode {
       GiftMode::Falling => {
@@ -237,5 +248,9 @@ impl<'a> Gift<'a> {
     points_image.draw(canvas, Point::new(
         position.x + self.points_offset.x + self.star_image.width() / 2.0,
         position.y + self.points_offset.y + self.star_image.height()), 0.0)
+  }
+
+  pub fn mode(&self) -> GiftMode {
+    return self.mode;
   }
 }

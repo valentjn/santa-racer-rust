@@ -22,20 +22,20 @@ pub struct Landscape<'a> {
 }
 
 pub struct Level<'a> {
-  pub image: &'a asset::Image<'a>,
-  pub tile_map: Vec<Vec<f64>>,
+  image: &'a asset::Image<'a>,
+  tile_map: Vec<Vec<f64>>,
   npc_map: Vec<Vec<f64>>,
-  pub canvas_size: Point,
+  canvas_size: Point,
 
   dog_sound: &'a asset::Sound,
   bell_sound: &'a asset::Sound,
   sleigh_collided_with_tile_sound1: &'a asset::Sound,
   sleigh_collided_with_tile_sound2: &'a asset::Sound,
 
-  pub game_mode: game::GameMode,
+  game_mode: game::GameMode,
 
-  pub offset_x: f64,
-  pub scroll_speed_x: f64,
+  offset_x: f64,
+  scroll_speed_x: f64,
   game_start_instant: std::time::Instant,
   scrolling_resume_instant: std::time::Instant,
   dog_sound_instant: std::time::Instant,
@@ -44,7 +44,7 @@ pub struct Level<'a> {
 
   npcs: Vec<Box<dyn npc::Npc + 'a>>,
 
-  pub tile_size: Point,
+  tile_size: Point,
   number_of_tiles: (usize, usize),
   number_of_visible_tiles_x: usize,
   start_offset_x: f64,
@@ -244,8 +244,8 @@ impl<'a> Level<'a> {
     if self.game_mode == game::GameMode::Menu {
       self.scroll_speed_x = self.menu_scroll_speed_x;
     } else {
-      self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position.x
-          / (self.canvas_size.x - sleigh.size.x)
+      self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position().x
+          / (self.canvas_size.x - sleigh.size().x)
           * (self.max_scroll_speed_x - self.min_scroll_speed_x);
     }
 
@@ -265,17 +265,18 @@ impl<'a> Level<'a> {
           self.min_bell_sound_duration, self.max_bell_sound_duration);
     }
 
-    if (self.game_mode == game::GameMode::Running) && !sleigh.counting_down && !sleigh.immobile {
+    if (self.game_mode == game::GameMode::Running) && !sleigh.counting_down()
+          && !sleigh.immobile() {
       if self.sleigh_collides_with_tile(sleigh) {
         let collided_with_level_sound = match rand::thread_rng().gen_range(0, 2) {
           0 => self.sleigh_collided_with_tile_sound1,
           _ => self.sleigh_collided_with_tile_sound2,
         };
 
-        collided_with_level_sound.play_with_position(self.canvas_size, sleigh.position);
+        collided_with_level_sound.play_with_position(self.canvas_size, sleigh.position());
         score.add_damage_points(self.sleigh_collided_with_tile_damage_points);
-        landscape.pause_scrolling(now + sleigh.immobile_duration);
-        self.pause_scrolling(now + sleigh.immobile_duration);
+        landscape.pause_scrolling(now + sleigh.immobile_duration());
+        self.pause_scrolling(now + sleigh.immobile_duration());
         sleigh.start_invincible_and_immobile();
       }
 
@@ -371,6 +372,26 @@ impl<'a> Level<'a> {
       min_tile_y: min_tile_y,
       max_tile_y: max_tile_y,
     };
+  }
+
+  pub fn tile(&self, tile_x: usize, tile_y: usize) -> f64 {
+    return self.tile_map[tile_y][tile_x];
+  }
+
+  pub fn canvas_size(&self) -> Point {
+    return self.canvas_size;
+  }
+
+  pub fn offset_x(&self) -> f64 {
+    return self.offset_x;
+  }
+
+  pub fn scroll_speed_x(&self) -> f64 {
+    return self.scroll_speed_x;
+  }
+
+  pub fn tile_size(&self) -> Point {
+    return self.tile_size;
   }
 }
 

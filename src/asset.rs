@@ -59,12 +59,12 @@ impl<'a> AssetLibrary<'a> {
     let mut song_library: SingleTypeAssetLibrary<Song<'a>> = SingleTypeAssetLibrary::new();
     let mut sound_library: SingleTypeAssetLibrary<Sound> = SingleTypeAssetLibrary::new();
 
-    data_library.load_assets(options.verbose_enabled);
-    image_library.load_assets(texture_creator, options.verbose_enabled);
+    data_library.load_assets(options.verbose_enabled());
+    image_library.load_assets(texture_creator, options.verbose_enabled());
 
-    if options.sound_enabled {
-      song_library.load_assets(options.verbose_enabled);
-      sound_library.load_assets(options.verbose_enabled);
+    if options.sound_enabled() {
+      song_library.load_assets(options.verbose_enabled());
+      sound_library.load_assets(options.verbose_enabled());
     }
 
     return AssetLibrary{

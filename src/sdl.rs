@@ -30,7 +30,7 @@ impl SdlWrapper {
     let video_subsystem = sdl.video().expect("Could not initialize video subsystem");
     let mut window_builder = video_subsystem.window("Santa Racer", WINDOW_WIDTH, WINDOW_HEIGHT);
     window_builder.resizable().position_centered();
-    if options.fullscreen_enabled { window_builder.fullscreen(); }
+    if options.fullscreen_enabled() { window_builder.fullscreen(); }
     let window = window_builder.build().expect("Could not create window");
 
     // TODO: add options (e.g., vsync)
@@ -39,7 +39,7 @@ impl SdlWrapper {
 
     let mut mixer: Option<sdl2::mixer::Sdl2MixerContext> = None;
 
-    if options.sound_enabled {
+    if options.sound_enabled() {
       mixer.replace(sdl2::mixer::init(sdl2::mixer::InitFlag::OGG).expect(
           "Could not initialize mixer"));
       sdl2::mixer::open_audio(AUDIO_FREQUENCY, sdl2::mixer::DEFAULT_FORMAT,

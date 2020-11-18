@@ -18,11 +18,11 @@ pub struct Sleigh<'a> {
   shield_image: &'a asset::Image<'a>,
   canvas_size: asset::Point,
 
-  pub game_mode: game::GameMode,
+  game_mode: game::GameMode,
 
-  pub size: Point,
-  pub position: Point,
-  pub velocity: Point,
+  size: Point,
+  position: Point,
+  velocity: Point,
   velocity_point1: Point,
   velocity_point2: Point,
   velocity_x_instant1: std::time::Instant,
@@ -32,12 +32,12 @@ pub struct Sleigh<'a> {
   sleigh_frame: f64,
   reindeer_frame: f64,
   shield_frame: f64,
-  pub counting_down: bool,
-  pub bonus: bool,
-  pub shield: bool,
+  counting_down: bool,
+  bonus: bool,
+  shield: bool,
   drunk: bool,
-  pub invincible: bool,
-  pub immobile: bool,
+  invincible: bool,
+  immobile: bool,
   electrocuted: bool,
   countdown_counter: i32,
   invincible_blink: bool,
@@ -69,7 +69,7 @@ pub struct Sleigh<'a> {
   shield_duration: std::time::Duration,
   drunk_duration: std::time::Duration,
   invincible_duration: std::time::Duration,
-  pub immobile_duration: std::time::Duration,
+  immobile_duration: std::time::Duration,
   electrocuted_duration: std::time::Duration,
   invincible_blink_period_duration: std::time::Duration,
   menu_period: Point,
@@ -90,11 +90,11 @@ pub struct Star<'a> {
   max_frame: f64,
   small: bool,
   drunk: bool,
-  pub small_probability: f64,
+  small_probability: f64,
   last_update_instant: std::time::Instant,
 
-  pub min_offset: Point,
-  pub max_offset: Point,
+  min_offset: Point,
+  max_offset: Point,
   frame_speed: f64,
   max_max_frame: f64,
 }
@@ -189,11 +189,8 @@ impl<'a> Sleigh<'a> {
     assert!(data.len() % 4 == 0, "Length of chimney hit box data not divisible by 4");
 
     for i in 0 .. data.len() / 4 {
-      chimneys.push(gift::Chimney{
-        position: Point::new(data[4 * i], data[4 * i + 1]),
-        size: Point::new(data[4 * i + 2], 20.0),
-        frame: data[4 * i + 3],
-      });
+      chimneys.push(gift::Chimney::new(Point::new(data[4 * i], data[4 * i + 1]),
+          Point::new(data[4 * i + 2], 20.0), data[4 * i + 3]));
     }
 
     return chimneys;
@@ -405,7 +402,7 @@ impl<'a> Sleigh<'a> {
       while i < self.gifts.len() {
         self.gifts[i].do_logic(score, level, &self.chimneys);
 
-        if self.gifts[i].mode == gift::GiftMode::CanBeDeleted {
+        if self.gifts[i].mode() == gift::GiftMode::CanBeDeleted {
           self.gifts.remove(i);
         } else {
           i += 1;
@@ -480,6 +477,42 @@ impl<'a> Sleigh<'a> {
           self.position.y + self.size.y / 2.0), format!("{}", self.countdown_counter),
           ui::Alignment::CenterRight);
     }
+  }
+
+  pub fn size(&self) -> Point {
+    return self.size;
+  }
+
+  pub fn position(&self) -> Point {
+    return self.position;
+  }
+
+  pub fn velocity(&self) -> Point {
+    return self.velocity;
+  }
+
+  pub fn counting_down(&self) -> bool {
+    return self.counting_down;
+  }
+
+  pub fn bonus(&self) -> bool {
+    return self.bonus;
+  }
+
+  pub fn shield(&self) -> bool {
+    return self.shield;
+  }
+
+  pub fn invincible(&self) -> bool {
+    return self.invincible;
+  }
+
+  pub fn immobile(&self) -> bool {
+    return self.immobile;
+  }
+
+  pub fn immobile_duration(&self) -> std::time::Duration {
+    return self.immobile_duration;
   }
 }
 
@@ -557,5 +590,29 @@ impl<'a> Star<'a> {
     let position = Point::new(self.position.x - level_offset_x, self.position.y);
 
     image.draw(canvas, position, self.frame);
+  }
+
+  pub fn small_probability(&self) -> f64 {
+    return self.small_probability;
+  }
+
+  pub fn set_small_probability(&mut self, small_probability: f64) {
+    self.small_probability = small_probability;
+  }
+
+  pub fn min_offset(&self) -> Point {
+    return self.min_offset;
+  }
+
+  pub fn set_min_offset(&mut self, min_offset: Point) {
+    self.min_offset = min_offset;
+  }
+
+  pub fn max_offset(&self) -> Point {
+    return self.max_offset;
+  }
+
+  pub fn set_max_offset(&mut self, max_offset: Point) {
+    self.max_offset = max_offset;
   }
 }
