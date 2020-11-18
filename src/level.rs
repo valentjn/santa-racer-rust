@@ -150,10 +150,10 @@ impl<'a> Level<'a> {
 
     let start_offset_x = -200.0;
 
-    let min_dog_sound_duration = std::time::Duration::from_millis(10000);
-    let max_dog_sound_duration = std::time::Duration::from_millis(20000);
-    let min_bell_sound_duration = std::time::Duration::from_millis(10000);
-    let max_bell_sound_duration = std::time::Duration::from_millis(20000);
+    let min_dog_sound_duration = std::time::Duration::from_secs_f64(10.0);
+    let max_dog_sound_duration = std::time::Duration::from_secs_f64(20.0);
+    let min_bell_sound_duration = std::time::Duration::from_secs_f64(10.0);
+    let max_bell_sound_duration = std::time::Duration::from_secs_f64(20.0);
     let now = std::time::Instant::now();
 
     return Level{

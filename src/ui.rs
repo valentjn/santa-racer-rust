@@ -78,7 +78,7 @@ impl<'a> Score<'a> {
 
       gift_points: 0.0,
       damage_points: 0.0,
-      remaining_duration: std::time::Duration::from_millis(0),
+      remaining_duration: std::time::Duration::from_secs_f64(0.0),
       finished: false,
       game_start_instant: now,
       last_update_instant: now,
@@ -95,7 +95,7 @@ impl<'a> Score<'a> {
     self.game_mode = game::GameMode::Running;
     self.gift_points = 0.0;
     self.damage_points = 0.0;
-    self.remaining_duration = std::time::Duration::from_millis(450000);
+    self.remaining_duration = std::time::Duration::from_secs_f64(450.0);
     self.game_start_instant = game_start_instant;
     self.last_update_instant = std::time::Instant::now();
   }
@@ -117,7 +117,7 @@ impl<'a> Score<'a> {
 
     if (self.game_mode == game::GameMode::Running) && (now >= self.game_start_instant) {
       self.remaining_duration -= now - self.last_update_instant;
-      let zero_duration = std::time::Duration::from_millis(0);
+      let zero_duration = std::time::Duration::from_secs_f64(0.0);
       if self.remaining_duration < zero_duration { self.remaining_duration = zero_duration; }
     }
 
