@@ -105,7 +105,7 @@ impl<'a> Sleigh<'a> {
     let reindeer_image = asset_library.get_image("reindeer");
     let reindeer_offset = Point::new(10.0, 3.0);
     let size = Point::new(sleigh_image.height() + reindeer_image.height() +
-        reindeer_offset.x, sleigh_image.height());
+        reindeer_offset.x(), sleigh_image.height());
     let now = std::time::Instant::now();
     let mut stars: Vec<Star<'a>> = Vec::new();
 
@@ -243,12 +243,12 @@ impl<'a> Sleigh<'a> {
     let velocity_x = self.get_velocity_x(now);
 
     self.velocity_x_instant1 = now;
-    self.velocity_point1.x = velocity_x;
+    self.velocity_point1 = Point::new(velocity_x, self.velocity_point1.y());
 
-    let target_velocity_x = sign * self.max_velocity.x;
+    let target_velocity_x = sign * self.max_velocity.x();
     self.velocity_x_instant2 = now + std::time::Duration::from_secs_f64(
-        (target_velocity_x - velocity_x).abs() / self.max_acceleration.x);
-    self.velocity_point2.x = target_velocity_x;
+        (target_velocity_x - velocity_x).abs() / self.max_acceleration.x());
+    self.velocity_point2 = Point::new(target_velocity_x, self.velocity_point2.y());
   }
 
   fn update_velocity_y(&mut self, sign: f64) {
@@ -256,21 +256,21 @@ impl<'a> Sleigh<'a> {
     let velocity_y = self.get_velocity_y(now);
 
     self.velocity_y_instant1 = now;
-    self.velocity_point1.y = velocity_y;
+    self.velocity_point1 = Point::new(self.velocity_point1.x(), velocity_y);
 
-    let target_velocity_y = sign * self.max_velocity.y;
+    let target_velocity_y = sign * self.max_velocity.y();
     self.velocity_y_instant2 = now + std::time::Duration::from_secs_f64(
-        (target_velocity_y - velocity_y).abs() / self.max_acceleration.y);
-    self.velocity_point2.y = target_velocity_y;
+        (target_velocity_y - velocity_y).abs() / self.max_acceleration.y());
+    self.velocity_point2 = Point::new(self.velocity_point2.x(), target_velocity_y);
   }
 
   fn get_velocity_x(&self, instant: std::time::Instant) -> f64 {
     if instant <= self.velocity_x_instant1 {
-      return self.velocity_point1.x;
+      return self.velocity_point1.x();
     } else if instant >= self.velocity_x_instant2 {
-      return self.velocity_point2.x;
+      return self.velocity_point2.x();
     } else {
-      return self.velocity_point1.x + (self.velocity_point2.x - self.velocity_point1.x)
+      return self.velocity_point1.x() + (self.velocity_point2.x() - self.velocity_point1.x())
           * (instant - self.velocity_x_instant1).as_secs_f64()
           / (self.velocity_x_instant2 - self.velocity_x_instant1).as_secs_f64();
     }
@@ -278,11 +278,11 @@ impl<'a> Sleigh<'a> {
 
   fn get_velocity_y(&self, instant: std::time::Instant) -> f64 {
     if instant <= self.velocity_y_instant1 {
-      return self.velocity_point1.y;
+      return self.velocity_point1.y();
     } else if instant >= self.velocity_y_instant2 {
-      return self.velocity_point2.y;
+      return self.velocity_point2.y();
     } else {
-      return self.velocity_point1.y + (self.velocity_point2.y - self.velocity_point1.y)
+      return self.velocity_point1.y() + (self.velocity_point2.y() - self.velocity_point1.y())
           * (instant - self.velocity_y_instant1).as_secs_f64()
           / (self.velocity_y_instant2 - self.velocity_y_instant1).as_secs_f64();
     }
@@ -329,7 +329,7 @@ impl<'a> Sleigh<'a> {
     self.invincible_reset_instant = std::time::Instant::now() + self.immobile_duration
         + self.invincible_duration;
     self.immobile_reset_instant = std::time::Instant::now() + self.immobile_duration;
-    self.velocity = Point::new(0.0, -self.max_velocity.y);
+    self.velocity = Point::new(0.0, -self.max_velocity.y());
     self.velocity_point1 = self.velocity;
     self.velocity_point2 = self.velocity;
   }
@@ -348,33 +348,26 @@ impl<'a> Sleigh<'a> {
 
     if self.game_mode == game::GameMode::Menu {
       let seconds_since_menu_start = now.duration_since(self.menu_start_instant).as_secs_f64();
-      self.position.x = (f64::sin(seconds_since_menu_start / self.menu_period.x
-              * 2.0 * std::f64::consts::PI + self.menu_offset_angle.x) + 1.0)
-            * ((self.menu_max_position.x - self.menu_min_position.x) / 2.0)
-            + self.menu_min_position.x;
-      self.position.y = (f64::sin(seconds_since_menu_start / self.menu_period.y
-              * 2.0 * std::f64::consts::PI + self.menu_offset_angle.y) + 1.0)
-            * ((self.menu_max_position.y - self.menu_min_position.y) / 2.0)
-            + self.menu_min_position.y;
+      self.position = ((seconds_since_menu_start / self.menu_period
+              * 2.0 * std::f64::consts::PI + self.menu_offset_angle).sin() + 1.0)
+            * ((self.menu_max_position - self.menu_min_position) / 2.0)
+            + self.menu_min_position;
     } else if self.counting_down {
     } else {
-      self.velocity.x = self.get_velocity_x(now);
-      self.velocity.y = self.get_velocity_y(now);
+      self.velocity = Point::new(self.get_velocity_x(now), self.get_velocity_y(now));
 
-      if ((self.velocity.x < 0.0) && (self.position.x <= 0.0))
-            || ((self.velocity.x > 0.0) && (self.position.x >= self.canvas_size.x - self.size.x)) {
-        self.velocity.x = 0.0;
+      if ((self.velocity.x() < 0.0) && (self.position.x() <= 0.0))
+            || ((self.velocity.x() > 0.0) && (self.position.x() >= self.canvas_size.x() - self.size.x())) {
+        self.velocity = Point::new(0.0, self.velocity.y());
       }
 
-      if ((self.velocity.y < 0.0) && (self.position.y <= 0.0))
-            || ((self.velocity.y > 0.0) && (self.position.y >= self.canvas_size.y - self.size.y)) {
-        self.velocity.y = 0.0;
+      if ((self.velocity.y() < 0.0) && (self.position.y() <= 0.0))
+            || ((self.velocity.y() > 0.0) && (self.position.y() >= self.canvas_size.y() - self.size.y())) {
+        self.velocity = Point::new(self.velocity.x(), 0.0);
       }
 
-      self.position.x = (self.position.x + seconds_since_last_update * self.velocity.x)
-          .max(0.0).min(self.canvas_size.x - self.size.x);
-      self.position.y = (self.position.y + seconds_since_last_update * self.velocity.y)
-          .max(0.0).min(self.canvas_size.y - self.size.y);
+      self.position = (self.position + seconds_since_last_update * self.velocity)
+          .max(Point::zero()).min(self.canvas_size - self.size);
     }
 
     if !self.immobile {
@@ -420,8 +413,8 @@ impl<'a> Sleigh<'a> {
   pub fn collides_with_image(&self, image: &asset::Image, position: Point, frame: f64) -> bool {
     return self.sleigh_image.collides(self.position, self.sleigh_frame, image,
         position, frame) || self.reindeer_image.collides(Point::new(
-          self.position.x + self.sleigh_image.width() + self.reindeer_offset.x,
-          self.position.y + self.reindeer_offset.y),
+          self.position.x() + self.sleigh_image.width() + self.reindeer_offset.x(),
+          self.position.y() + self.reindeer_offset.y()),
         self.sleigh_frame, image, position, frame);
   }
 
@@ -432,49 +425,49 @@ impl<'a> Sleigh<'a> {
 
     if self.electrocuted {
       let electrocuted_sleigh_offset = Point::new(
-          self.electrocuted_offset.x
+          self.electrocuted_offset.x()
           - (self.electrocuted_sleigh_image.width() - self.sleigh_image.width()) / 2.0,
-          self.electrocuted_offset.y
+          self.electrocuted_offset.y()
           - (self.electrocuted_sleigh_image.height() - self.sleigh_image.height()) / 2.0);
       let electrocuted_reindeer_offset = Point::new(
-          self.electrocuted_offset.x
+          self.electrocuted_offset.x()
           - (self.electrocuted_reindeer_image.width() - self.reindeer_image.width()) / 2.0,
-          self.electrocuted_offset.y
+          self.electrocuted_offset.y()
           - (self.electrocuted_reindeer_image.height() - self.reindeer_image.height()) / 2.0);
       self.electrocuted_sleigh_image.draw(canvas, Point::new(
-            self.position.x + electrocuted_sleigh_offset.x,
-            self.position.y + electrocuted_sleigh_offset.y),
+            self.position.x() + electrocuted_sleigh_offset.x(),
+            self.position.y() + electrocuted_sleigh_offset.y()),
           self.sleigh_frame);
       self.electrocuted_reindeer_image.draw(canvas, Point::new(
-            self.position.x + self.sleigh_image.width() + self.reindeer_offset.x
-            + electrocuted_reindeer_offset.x,
-            self.position.y + self.reindeer_offset.y + electrocuted_reindeer_offset.y),
+            self.position.x() + self.sleigh_image.width() + self.reindeer_offset.x()
+            + electrocuted_reindeer_offset.x(),
+            self.position.y() + self.reindeer_offset.y() + electrocuted_reindeer_offset.y()),
           self.reindeer_frame);
       self.electrocuted_reindeer_image.draw(canvas, Point::new(
-            self.position.x + self.sleigh_image.width() + electrocuted_reindeer_offset.x,
-            self.position.y + self.reindeer_offset.y + electrocuted_reindeer_offset.y),
+            self.position.x() + self.sleigh_image.width() + electrocuted_reindeer_offset.x(),
+            self.position.y() + self.reindeer_offset.y() + electrocuted_reindeer_offset.y()),
           self.reindeer_frame);
     }
 
     self.sleigh_image.draw(canvas, self.position, self.sleigh_frame);
     self.reindeer_image.draw(canvas,
-        Point::new(self.position.x + self.sleigh_image.width() + self.reindeer_offset.x,
-          self.position.y + self.reindeer_offset.y), self.reindeer_frame);
+        Point::new(self.position.x() + self.sleigh_image.width() + self.reindeer_offset.x(),
+          self.position.y() + self.reindeer_offset.y()), self.reindeer_frame);
     self.reindeer_image.draw(canvas,
-        Point::new(self.position.x + self.sleigh_image.width(),
-          self.position.y + self.reindeer_offset.y), self.reindeer_frame);
+        Point::new(self.position.x() + self.sleigh_image.width(),
+          self.position.y() + self.reindeer_offset.y()), self.reindeer_frame);
 
     for gift in &self.gifts { gift.draw(canvas, level); }
     for star in &self.stars { star.draw(canvas, 0.0); }
 
     if self.shield {
-      self.shield_image.draw(canvas, Point::new(self.position.x + self.shield_offset.x,
-          self.position.y + self.shield_offset.y), self.shield_frame);
+      self.shield_image.draw(canvas, Point::new(self.position.x() + self.shield_offset.x(),
+          self.position.y() + self.shield_offset.y()), self.shield_frame);
     }
 
     if self.counting_down {
-      font.draw(canvas, Point::new(self.position.x + self.countdown_counter_offset_x,
-          self.position.y + self.size.y / 2.0), format!("{}", self.countdown_counter),
+      font.draw(canvas, Point::new(self.position.x() + self.countdown_counter_offset_x,
+          self.position.y() + self.size.y() / 2.0), format!("{}", self.countdown_counter),
           ui::Alignment::CenterRight);
     }
   }
@@ -555,19 +548,19 @@ impl<'a> Star<'a> {
   }
 
   fn reset_from_beginning(&mut self, sleigh_position: Point, sleigh_size: Point, drunk: bool) {
-    let offset_x = if self.min_offset.x < self.max_offset.x {
-          rand::thread_rng().gen_range(self.min_offset.x, self.max_offset.x)
+    let offset_x = if self.min_offset.x() < self.max_offset.x() {
+          rand::thread_rng().gen_range(self.min_offset.x(), self.max_offset.x())
         } else {
-          self.min_offset.x
+          self.min_offset.x()
         };
-    let offset_y = if self.min_offset.y < self.max_offset.y {
-          rand::thread_rng().gen_range(self.min_offset.y, self.max_offset.y)
+    let offset_y = if self.min_offset.y() < self.max_offset.y() {
+          rand::thread_rng().gen_range(self.min_offset.y(), self.max_offset.y())
         } else {
-          self.min_offset.y
+          self.min_offset.y()
         };
 
-    self.position = Point::new(sleigh_position.x + sleigh_size.x + offset_x,
-        sleigh_position.y + sleigh_size.y + offset_y);
+    self.position = Point::new(sleigh_position.x() + sleigh_size.x() + offset_x,
+        sleigh_position.y() + sleigh_size.y() + offset_y);
     self.frame = 0.0;
     self.max_frame = rand::thread_rng().gen_range(
         self.image.total_number_of_frames() as f64, self.max_max_frame);
@@ -587,7 +580,7 @@ impl<'a> Star<'a> {
 
     let image = if self.small { if self.drunk { self.small_drunk_image } else { self.small_image } }
         else { if self.drunk { self.drunk_image } else { self.image } };
-    let position = Point::new(self.position.x - level_offset_x, self.position.y);
+    let position = Point::new(self.position.x() - level_offset_x, self.position.y());
 
     image.draw(canvas, position, self.frame);
   }

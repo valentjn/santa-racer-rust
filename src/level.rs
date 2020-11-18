@@ -108,7 +108,7 @@ impl<'a> Landscape<'a> {
 
     if now > self.scrolling_resume_instant {
       self.offset_x = (self.offset_x + seconds_since_last_update * scroll_speed_x) %
-          self.size.x;
+          self.size.x();
     }
 
     self.last_update_instant = now;
@@ -117,11 +117,11 @@ impl<'a> Landscape<'a> {
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>) {
     self.image.draw_blit(canvas, sdl2::rect::Rect::new(self.offset_x as i32, 0,
-        (self.size.x - self.offset_x) as u32, self.size.y as u32),
+        (self.size.x() - self.offset_x) as u32, self.size.y() as u32),
         Point::zero(), 0.0);
     self.image.draw_blit(canvas, sdl2::rect::Rect::new(0, 0,
-        self.offset_x as u32, self.size.y as u32),
-        Point::new(self.size.x - self.offset_x, 0.0), 0.0);
+        self.offset_x as u32, self.size.y() as u32),
+        Point::new(self.size.x() - self.offset_x, 0.0), 0.0);
   }
 }
 
@@ -183,7 +183,7 @@ impl<'a> Level<'a> {
 
       tile_size: tile_size,
       number_of_tiles: (number_of_tiles_x, number_of_tiles_y),
-      number_of_visible_tiles_x: (canvas_size.x / tile_size.x + 1.0) as usize,
+      number_of_visible_tiles_x: (canvas_size.x() / tile_size.x() + 1.0) as usize,
       start_offset_x: start_offset_x,
       min_scroll_speed_x: 40.0,
       max_scroll_speed_x: 160.0,
@@ -244,8 +244,8 @@ impl<'a> Level<'a> {
     if self.game_mode == game::GameMode::Menu {
       self.scroll_speed_x = self.menu_scroll_speed_x;
     } else {
-      self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position().x
-          / (self.canvas_size.x - sleigh.size().x)
+      self.scroll_speed_x = self.min_scroll_speed_x + sleigh.position().x()
+          / (self.canvas_size.x() - sleigh.size().x())
           * (self.max_scroll_speed_x - self.min_scroll_speed_x);
     }
 
@@ -331,8 +331,8 @@ impl<'a> Level<'a> {
     for (tile_x, tile_y) in self.visible_tiles_iter() {
       let tile_frame = self.tile_map[tile_y][tile_x];
       if tile_frame < 0.0 { continue; }
-      let tile_position = Point::new((tile_x as f64) * self.tile_size.x - self.offset_x,
-          (tile_y as f64) * self.tile_size.y);
+      let tile_position = Point::new((tile_x as f64) * self.tile_size.x() - self.offset_x,
+          (tile_y as f64) * self.tile_size.y());
       if sleigh.collides_with_image(self.image, tile_position, tile_frame) { return true; }
     }
 
@@ -347,8 +347,8 @@ impl<'a> Level<'a> {
     for (tile_x, tile_y) in self.visible_tiles_iter() {
       let frame = self.tile_map[tile_y][tile_x];
       if frame < 0.0 { continue; }
-      let dst_point = Point::new((tile_x as f64) * self.tile_size.x - self.offset_x,
-          (tile_y as f64) * self.tile_size.y);
+      let dst_point = Point::new((tile_x as f64) * self.tile_size.x() - self.offset_x,
+          (tile_y as f64) * self.tile_size.y());
       self.image.draw(canvas, dst_point, frame);
     }
 
@@ -358,7 +358,7 @@ impl<'a> Level<'a> {
   }
 
   pub fn visible_tiles_iter(&self) -> TileIterator {
-    let min_tile_x = (self.offset_x / self.tile_size.x - 1.0).max(0.0) as usize;
+    let min_tile_x = (self.offset_x / self.tile_size.x() - 1.0).max(0.0) as usize;
     let max_tile_x = (min_tile_x + self.number_of_visible_tiles_x + 2).min(self.number_of_tiles.0);
     let min_tile_y = 0;
     let max_tile_y = self.tile_map.len();

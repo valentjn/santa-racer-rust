@@ -80,7 +80,8 @@ impl<'a> Game<'a> {
         asset_library: &'a asset::AssetLibrary, options: &'a options::Options) -> Game<'a> {
     let buffer_size = Point::new(640.0, 480.0);
     let buffer_texture = texture_creator.create_texture_target(
-        None, buffer_size.x as u32, buffer_size.y as u32).expect("Could not create buffer texture");
+        None, buffer_size.x() as u32, buffer_size.y() as u32).expect(
+        "Could not create buffer texture");
 
     asset_library.get_song("music").play();
 
@@ -260,15 +261,15 @@ impl<'a> Game<'a> {
     let canvas_size = Point::from_u32_tuple(self.canvas.output_size().expect(
         "Could not get output size of window canvas"));
 
-    let dst_rect = if canvas_size.x / canvas_size.y
-          >= self.buffer_size.x / self.buffer_size.y {
-      let dst_width = (self.buffer_size.x / self.buffer_size.y) * canvas_size.y;
-      sdl2::rect::Rect::new(((canvas_size.x - dst_width) / 2.0) as i32, 0,
-          dst_width as u32, canvas_size.y as u32)
+    let dst_rect = if canvas_size.x() / canvas_size.y()
+          >= self.buffer_size.x() / self.buffer_size.y() {
+      let dst_width = (self.buffer_size.x() / self.buffer_size.y()) * canvas_size.y();
+      sdl2::rect::Rect::new(((canvas_size.x() - dst_width) / 2.0) as i32, 0,
+          dst_width as u32, canvas_size.y() as u32)
     } else {
-      let dst_height = (self.buffer_size.y / self.buffer_size.x) * canvas_size.x;
-      sdl2::rect::Rect::new(0, ((canvas_size.y - dst_height) / 2.0) as i32,
-          canvas_size.x as u32, dst_height as u32)
+      let dst_height = (self.buffer_size.y() / self.buffer_size.x()) * canvas_size.x();
+      sdl2::rect::Rect::new(0, ((canvas_size.y() - dst_height) / 2.0) as i32,
+          canvas_size.x() as u32, dst_height as u32)
     };
 
     self.canvas.copy(&self.buffer_texture, None, dst_rect).expect(

@@ -49,6 +49,7 @@ struct Balloon<'a> {
   frame_increasing: bool,
   visible: bool,
 
+  launch_velocity: Point,
   cash_balloon_damage_points: f64,
   heart_balloon_gift_points: f64,
 }
@@ -137,8 +138,8 @@ impl<'a> NpcBase<'a> {
 
       tile: tile,
       size: image.size(),
-      position: Point::new(((tile.0 as f64) + 0.5) * level_tile_size.x - image.width() / 2.0,
-        ((tile.1 as f64) + 0.5) * level_tile_size.y - image.height() / 2.0),
+      position: Point::new(((tile.0 as f64) + 0.5) * level_tile_size.x() - image.width() / 2.0,
+        ((tile.1 as f64) + 0.5) * level_tile_size.y() - image.height() / 2.0),
       velocity: Point::zero(),
       acceleration: Point::zero(),
       frame: 0.0,
@@ -154,12 +155,8 @@ impl<'a> NpcBase<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.last_update_instant).as_secs_f64();
 
-    self.velocity.x = self.velocity.x + seconds_since_last_update * self.acceleration.x;
-    self.velocity.y = self.velocity.y + seconds_since_last_update * self.acceleration.y;
-
-    self.position.x = self.position.x + seconds_since_last_update * self.velocity.x;
-    self.position.y = self.position.y + seconds_since_last_update * self.velocity.y;
-
+    self.velocity = self.velocity + seconds_since_last_update * self.acceleration;
+    self.position = self.position + seconds_since_last_update * self.velocity;
     self.frame += seconds_since_last_update * self.frame_speed;
 
     self.last_update_instant = now;
@@ -167,11 +164,11 @@ impl<'a> NpcBase<'a> {
 
   fn collides_with_sleigh(&self, level_offset_x: f64, sleigh: &mut sleigh::Sleigh) -> bool {
     return sleigh.collides_with_image(self.image,
-        Point::new(self.position.x - level_offset_x, self.position.y), self.frame);
+        Point::new(self.position.x() - level_offset_x, self.position.y()), self.frame);
   }
 
   fn draw(&self, canvas: &mut sdl2::render::WindowCanvas, level_offset_x: f64) {
-    self.image.draw(canvas, Point::new(self.position.x - level_offset_x, self.position.y),
+    self.image.draw(canvas, Point::new(self.position.x() - level_offset_x, self.position.y()),
         self.frame);
   }
 }
@@ -240,6 +237,7 @@ impl<'a> Balloon<'a> {
       frame_increasing: true,
       visible: true,
 
+      launch_velocity: Point::new(0.0, -50.0),
       cash_balloon_damage_points: -50.0,
       heart_balloon_gift_points: 20.0,
     };
@@ -252,9 +250,9 @@ impl<'a> Npc for Balloon<'a> {
     let now = std::time::Instant::now();
     let seconds_since_last_update = (now - self.npc_base.last_update_instant).as_secs_f64();
 
-    if (level_offset_x + self.npc_base.canvas_size.x) / self.npc_base.level_tile_size.x
+    if (level_offset_x + self.npc_base.canvas_size.x()) / self.npc_base.level_tile_size.x()
           >= self.npc_base.tile.0 as f64 {
-      self.npc_base.velocity.y = -50.0;
+      self.npc_base.velocity = self.launch_velocity;
     }
 
     let frame = self.npc_base.frame;
@@ -367,8 +365,8 @@ impl<'a> Npc for Finish<'a> {
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    if level_offset_x + sleigh.position().x + sleigh.size().x
-          >= self.npc_base.position.x + self.npc_base.size.x / 2.0 {
+    if level_offset_x + sleigh.position().x() + sleigh.size().x()
+          >= self.npc_base.position.x() + self.npc_base.size.x() / 2.0 {
       score.set_finished(true);
     }
   }
@@ -511,12 +509,12 @@ impl<'a> Npc for Snowman<'a> {
         star.do_logic(self.npc_base.position, self.npc_base.size, false);
       }
     } else {
-      let sleigh_same_y_as_sleigh_seconds = (sleigh.position().y - self.npc_base.position.y)
-          / self.launch_velocity.y;
-      let future_sleigh_position_x = level_offset_x + sleigh.position().x + sleigh.size().x / 2.0
+      let sleigh_same_y_as_sleigh_seconds = (sleigh.position().y() - self.npc_base.position.y())
+          / self.launch_velocity.y();
+      let future_sleigh_position_x = level_offset_x + sleigh.position().x() + sleigh.size().x() / 2.0
           + sleigh_same_y_as_sleigh_seconds * level_scroll_speed_x;
-      let future_snowman_position_x = self.npc_base.position.x + self.npc_base.size.x / 2.0
-          + sleigh_same_y_as_sleigh_seconds * self.launch_velocity.x;
+      let future_snowman_position_x = self.npc_base.position.x() + self.npc_base.size.x() / 2.0
+          + sleigh_same_y_as_sleigh_seconds * self.launch_velocity.x();
 
       if future_sleigh_position_x >= future_snowman_position_x {
         self.launch_sound.play_with_level_position(self.npc_base.canvas_size, level_offset_x,

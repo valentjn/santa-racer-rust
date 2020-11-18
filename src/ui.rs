@@ -128,9 +128,9 @@ impl<'a> Score<'a> {
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, font: &'a Font<'a>) {
     if self.game_mode == game::GameMode::Menu {
       font.draw(canvas, Point::zero(), "F1/F2 - Hilfe", Alignment::TopLeft);
-      font.draw(canvas, Point::new(self.canvas_size.x / 2.0, 0.0), "F3 - Highscores",
+      font.draw(canvas, Point::new(self.canvas_size.x() / 2.0, 0.0), "F3 - Highscores",
           Alignment::TopCenter);
-      font.draw(canvas, Point::new(self.canvas_size.x, 0.0), "F5/F6 - Spielen",
+      font.draw(canvas, Point::new(self.canvas_size.x(), 0.0), "F5/F6 - Spielen",
           Alignment::TopRight);
     } else {
       self.gift_image.draw(canvas, Point::new(self.gift_position_x, 0.0), 0.0);
@@ -164,9 +164,9 @@ impl<'a> HighscoreTable<'a> {
         texture_creator: &'a sdl2::render::TextureCreator<sdl2::video::WindowContext>) ->
         HighscoreTable<'a> {
     let position = Point::new(50.0, 50.0);
-    let size = Point::new(canvas_size.x - 2.0 * position.x, canvas_size.y - 2.0 * position.y);
+    let size = Point::new(canvas_size.x() - 2.0 * position.x(), canvas_size.y() - 2.0 * position.y());
 
-    let mut background_surface = sdl2::surface::Surface::new(size.x as u32, size.y as u32,
+    let mut background_surface = sdl2::surface::Surface::new(size.x() as u32, size.y() as u32,
         sdl2::pixels::PixelFormatEnum::RGBA32).expect("Could not create surface");
     background_surface.fill_rect(None, sdl2::pixels::Color::BLACK).expect(
         "Could not fill surface with color");
@@ -206,15 +206,16 @@ impl<'a> HighscoreTable<'a> {
 
     self.background_image.draw(canvas, self.position, 0.0);
 
-    let inner_height = self.size.y - 2.0 * self.inner_margin.y;
+    let inner_height = self.size.y() - 2.0 * self.inner_margin.y();
     let offset_y = (inner_height - font.height) / (self.number_of_rows - 1.0);
 
     for (i, highscore) in highscores.iter().enumerate() {
-      let mut dst_point = Point::new(self.position.x + self.inner_margin.x,
-          self.position.y + self.inner_margin.y + offset_y * (i as f64));
+      let dst_point = Point::new(self.position.x() + self.inner_margin.x(),
+          self.position.y() + self.inner_margin.y() + offset_y * (i as f64));
       font.draw_monospace(canvas, dst_point, highscore.name(), Alignment::TopLeft);
 
-      dst_point.x = self.position.x + self.size.x - self.inner_margin.y;
+      let dst_point = Point::new(self.position.x() + self.size.x() - self.inner_margin.y(),
+          dst_point.y());
       font.draw_monospace(canvas, dst_point, highscore.score().to_string(), Alignment::TopRight);
     }
   }
@@ -246,16 +247,14 @@ impl<'a> Font<'a> {
           let i = (frame as usize) * image_width + x + y * image_surface_width;
 
           if mask[i] {
-            min_point.x = min_point.x.min(x as f64);
-            min_point.y = min_point.y.min(y as f64);
-            max_point.x = max_point.x.max(x as f64);
-            max_point.y = max_point.y.max(y as f64);
+            min_point = min_point.min(Point::new(x as f64, y as f64));
+            max_point = max_point.max(Point::new(x as f64, y as f64));
           }
         }
       }
 
-      character_rects.push(sdl2::rect::Rect::new(min_point.x as i32, 0,
-          (max_point.x - min_point.x + 1.0) as u32, image_height as u32));
+      character_rects.push(sdl2::rect::Rect::new(min_point.x() as i32, 0,
+          (max_point.x() - min_point.x() + 1.0) as u32, image_height as u32));
     }
 
     let max_character_width: i32 = character_rects.iter().max_by(|&x, &y| x.width().cmp(&y.width()))
@@ -297,22 +296,22 @@ impl<'a> Font<'a> {
         else { text_character_rects.iter().map(|x| x.width() as i32).sum() } as i32;
 
     let mut dst_point = Point::new(
-      dst_point.x - (((alignment as i32) % 3) * (text_width / 2)) as f64,
-      dst_point.y - (((alignment as i32) / 3) * ((self.height as i32) / 2)) as f64,
+      dst_point.x() - (((alignment as i32) % 3) * (text_width / 2)) as f64,
+      dst_point.y() - (((alignment as i32) / 3) * ((self.height as i32) / 2)) as f64,
     );
 
     for ((character, character_rect), frame) in
           text.chars().zip(text_character_rects.iter()).zip(frames.iter()) {
       let monospace_offset_x = ((self.max_character_width as f64)
           - (character_rect.width() as f64)) / 2.0;
-      if monospace { dst_point.x += monospace_offset_x; }
+      if monospace { dst_point = Point::new(dst_point.x() + monospace_offset_x, dst_point.y()); }
 
       if character != ' ' {
         self.image.draw_blit(canvas, *character_rect, dst_point, *frame as f64);
       }
 
-      dst_point.x += character_rect.width() as f64;
-      if monospace { dst_point.x += monospace_offset_x; }
+      dst_point = Point::new(dst_point.x() + (character_rect.width() as f64), dst_point.y());
+      if monospace { dst_point = Point::new(dst_point.x() + monospace_offset_x, dst_point.y()); }
     }
   }
 }

@@ -76,8 +76,8 @@ impl<'a> Gift<'a> {
     let velocity_y = 50.0;
     let velocity = match difficulty {
       game::GameDifficulty::Easy => Point::new(level.scroll_speed_x(), velocity_y),
-      game::GameDifficulty::Hard => Point::new(sleigh.velocity().x + level.scroll_speed_x(),
-        velocity_y + sleigh.velocity().y),
+      game::GameDifficulty::Hard => Point::new(sleigh.velocity().x() + level.scroll_speed_x(),
+        velocity_y + sleigh.velocity().y()),
     };
 
     return Gift{
@@ -95,8 +95,8 @@ impl<'a> Gift<'a> {
       bonus: sleigh.bonus(),
 
       size: image.size(),
-      position: Point::new(sleigh.position().x + level.offset_x(),
-        sleigh.position().y + sleigh.size().y),
+      position: Point::new(sleigh.position().x() + level.offset_x(),
+        sleigh.position().y() + sleigh.size().y()),
       velocity: velocity,
       acceleration: Point::new(0.0, 200.0),
       frame: rand::thread_rng().gen_range(0, image.total_number_of_frames()) as f64,
@@ -123,10 +123,8 @@ impl<'a> Gift<'a> {
 
     match self.mode {
       GiftMode::Falling => {
-        self.position.x += seconds_since_last_update * self.velocity.x;
-        self.position.y += seconds_since_last_update * self.velocity.y;
-        self.velocity.x += seconds_since_last_update * self.acceleration.x;
-        self.velocity.y += seconds_since_last_update * self.acceleration.y;
+        self.position = self.position + seconds_since_last_update * self.velocity;
+        self.velocity = self.velocity + seconds_since_last_update * self.acceleration;
         self.frame += seconds_since_last_update * self.frame_speed;
 
         if let Some(chimney_tile_y) = self.has_collided_with_chimney(level, chimneys) {
@@ -160,21 +158,21 @@ impl<'a> Gift<'a> {
 
   fn has_collided_with_chimney(&self, level: &level::Level,
         chimneys: &Vec<Chimney>) -> Option<usize> {
-    let center_position = Point::new(self.position.x + self.size.x / 2.0,
-        self.position.y + self.size.y / 2.0);
+    let center_position = Point::new(self.position.x() + self.size.x() / 2.0,
+        self.position.y() + self.size.y() / 2.0);
 
     for (tile_x, tile_y) in level.visible_tiles_iter() {
       let frame = level.tile(tile_x, tile_y);
       if frame < 0.0 { continue; }
-      let tile_position = Point::new((tile_x as f64) * level.tile_size().x,
-          (tile_y as f64) * level.tile_size().y);
+      let tile_position = Point::new((tile_x as f64) * level.tile_size().x(),
+          (tile_y as f64) * level.tile_size().y());
 
       for chimney in chimneys.iter() {
         if (chimney.frame == frame)
-              && (center_position.x >= tile_position.x + chimney.position.x)
-              && (center_position.x <= tile_position.x + chimney.position.x + chimney.size.x)
-              && (center_position.y >= tile_position.y + chimney.position.y)
-              && (center_position.y <= tile_position.y + chimney.position.y + chimney.size.y) {
+              && (center_position.x() >= tile_position.x() + chimney.position.x())
+              && (center_position.x() <= tile_position.x() + chimney.position.x() + chimney.size.x())
+              && (center_position.y() >= tile_position.y() + chimney.position.y())
+              && (center_position.y() <= tile_position.y() + chimney.position.y() + chimney.size.y()) {
           return Some(tile_y);
         }
       }
@@ -184,12 +182,12 @@ impl<'a> Gift<'a> {
   }
 
   fn has_collided_with_ground(&self) -> bool {
-    return self.position.y >= self.canvas_size.y;
+    return self.position.y() >= self.canvas_size.y();
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
         &self, canvas: &mut sdl2::render::Canvas<RenderTarget>, level: &level::Level) {
-    let position: Point = Point::new(self.position.x - level.offset_x(), self.position.y);
+    let position: Point = Point::new(self.position.x() - level.offset_x(), self.position.y());
 
     match self.mode {
       GiftMode::Falling => {
@@ -197,10 +195,10 @@ impl<'a> Gift<'a> {
       },
 
       GiftMode::ShowingPoints(gift_points) => {
-        let position = Point::new(position.x - self.star_image.width() / 2.0,
-            position.y - self.star_image.height() / 2.0);
-        let bonus_position = Point::new(position.x + self.bonus_offset.x,
-            position.y + self.bonus_offset.y);
+        let position = Point::new(position.x() - self.star_image.width() / 2.0,
+            position.y() - self.star_image.height() / 2.0);
+        let bonus_position = Point::new(position.x() + self.bonus_offset.x(),
+            position.y() + self.bonus_offset.y());
 
         self.draw_star(position, canvas);
         if self.bonus { self.draw_star(bonus_position, canvas); }
@@ -219,20 +217,20 @@ impl<'a> Gift<'a> {
 
     if (self.frame >= self.star1_frame_offset)
           && (self.frame < self.star1_frame_offset + number_of_star_frames) {
-      self.star_image.draw(canvas, Point::new(position.x + self.star1_offset.x,
-          position.y + self.star1_offset.y), self.frame - self.star1_frame_offset);
+      self.star_image.draw(canvas, Point::new(position.x() + self.star1_offset.x(),
+          position.y() + self.star1_offset.y()), self.frame - self.star1_frame_offset);
     }
 
     if (self.frame >= self.star2_frame_offset)
           && (self.frame < self.star2_frame_offset + number_of_star_frames) {
-      self.star_image.draw(canvas, Point::new(position.x + self.star2_offset.x,
-          position.y + self.star2_offset.y), self.frame - self.star2_frame_offset);
+      self.star_image.draw(canvas, Point::new(position.x() + self.star2_offset.x(),
+          position.y() + self.star2_offset.y()), self.frame - self.star2_frame_offset);
     }
 
     if (self.frame >= self.star3_frame_offset)
           && (self.frame < self.star3_frame_offset + number_of_star_frames) {
-      self.star_image.draw(canvas, Point::new(position.x + self.star3_offset.x,
-          position.y + self.star3_offset.y), self.frame - self.star3_frame_offset);
+      self.star_image.draw(canvas, Point::new(position.x() + self.star3_offset.x(),
+          position.y() + self.star3_offset.y()), self.frame - self.star3_frame_offset);
     }
   }
 
@@ -246,8 +244,8 @@ impl<'a> Gift<'a> {
     };
 
     points_image.draw(canvas, Point::new(
-        position.x + self.points_offset.x + self.star_image.width() / 2.0,
-        position.y + self.points_offset.y + self.star_image.height()), 0.0)
+        position.x() + self.points_offset.x() + self.star_image.width() / 2.0,
+        position.y() + self.points_offset.y() + self.star_image.height()), 0.0)
   }
 
   pub fn mode(&self) -> GiftMode {

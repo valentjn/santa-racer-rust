@@ -47,8 +47,8 @@ pub struct Sound {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Point {
-  pub x: f64,
-  pub y: f64,
+  x: f64,
+  y: f64,
 }
 
 impl<'a> AssetLibrary<'a> {
@@ -282,7 +282,7 @@ impl<'a> Image<'a> {
         src_rect.y() + ((frame / self.number_of_frames.0) % self.number_of_frames.1)
           * (self.height() as i32), src_rect.width(), src_rect.height());
 
-    let dst_rect = sdl2::rect::Rect::new(dst_point.x.floor() as i32, dst_point.y.floor() as i32,
+    let dst_rect = sdl2::rect::Rect::new(dst_point.x().floor() as i32, dst_point.y().floor() as i32,
         src_rect.width(), src_rect.height());
 
     canvas.copy(&self.texture, src_rect, dst_rect).expect("Could not copy texture");
@@ -290,8 +290,8 @@ impl<'a> Image<'a> {
 
   pub fn collides(&self, point: Point, frame: f64, other: &Image, other_point: Point,
         other_frame: f64) -> bool {
-    let (point_x, point_y) = (point.x as i32, point.y as i32);
-    let (other_point_x, other_point_y) = (other_point.x as i32, other_point.y as i32);
+    let (point_x, point_y) = (point.x() as i32, point.y() as i32);
+    let (other_point_x, other_point_y) = (other_point.x() as i32, other_point.y() as i32);
     let frame = frame as i32;
     let other_frame = other_frame as i32;
     let (width, height) = (self.width() as i32, self.height() as i32);
@@ -415,11 +415,11 @@ impl Sound {
   }
 
   pub fn play_with_level_position(&self, canvas_size: Point, level_offset_x: f64, position: Point) {
-    self.play_with_position(canvas_size, Point::new(position.x - level_offset_x, position.y));
+    self.play_with_position(canvas_size, Point::new(position.x() - level_offset_x, position.y()));
   }
 
   pub fn play_with_position(&self, canvas_size: Point, position: Point) {
-    self.play_with_pan(position.x / canvas_size.x);
+    self.play_with_pan(position.x() / canvas_size.x());
   }
 
   pub fn play_with_pan(&self, pan: f64) {
@@ -464,5 +464,121 @@ impl Point {
 
   pub fn from_u32_tuple(point: (u32, u32)) -> Point {
     return Point{x: point.0 as f64, y: point.1 as f64};
+  }
+
+  pub fn min(&self, rhs: Point) -> Point {
+    return Point::new(self.x.min(rhs.x), self.y.min(rhs.y));
+  }
+
+  pub fn max(&self, rhs: Point) -> Point {
+    return Point::new(self.x.max(rhs.x), self.y.max(rhs.y));
+  }
+
+  pub fn sin(&self) -> Point {
+    return Point::new(f64::sin(self.x), f64::sin(self.y));
+  }
+
+  pub fn x(&self) -> f64 {
+    return self.x;
+  }
+
+  pub fn y(&self) -> f64 {
+    return self.y;
+  }
+}
+
+impl std::ops::Add<Point> for Point {
+  type Output = Point;
+
+  fn add(self, rhs: Point) -> Point {
+    return Point::new(self.x + rhs.x, self.y + rhs.y);
+  }
+}
+
+impl std::ops::Add<f64> for Point {
+  type Output = Point;
+
+  fn add(self, rhs: f64) -> Point {
+    return Point::new(self.x + rhs, self.y + rhs);
+  }
+}
+
+impl std::ops::Add<Point> for f64 {
+  type Output = Point;
+
+  fn add(self, rhs: Point) -> Point {
+    return Point::new(self + rhs.x, self + rhs.y);
+  }
+}
+
+impl std::ops::Sub<Point> for Point {
+  type Output = Point;
+
+  fn sub(self, rhs: Point) -> Point {
+    return Point::new(self.x - rhs.x, self.y - rhs.y);
+  }
+}
+
+impl std::ops::Sub<f64> for Point {
+  type Output = Point;
+
+  fn sub(self, rhs: f64) -> Point {
+    return Point::new(self.x - rhs, self.y - rhs);
+  }
+}
+
+impl std::ops::Sub<Point> for f64 {
+  type Output = Point;
+
+  fn sub(self, rhs: Point) -> Point {
+    return Point::new(self - rhs.x, self - rhs.y);
+  }
+}
+
+impl std::ops::Mul<Point> for Point {
+  type Output = Point;
+
+  fn mul(self, rhs: Point) -> Point {
+    return Point::new(self.x * rhs.x, self.y * rhs.y);
+  }
+}
+
+impl std::ops::Mul<f64> for Point {
+  type Output = Point;
+
+  fn mul(self, rhs: f64) -> Point {
+    return Point::new(self.x * rhs, self.y * rhs);
+  }
+}
+
+impl std::ops::Mul<Point> for f64 {
+  type Output = Point;
+
+  fn mul(self, rhs: Point) -> Point {
+    return Point::new(self * rhs.x, self * rhs.y);
+  }
+}
+
+impl std::ops::Div<Point> for Point {
+  type Output = Point;
+
+  fn div(self, rhs: Point) -> Point {
+    return Point::new(self.x / rhs.x, self.y / rhs.y);
+  }
+}
+
+impl std::ops::Div<f64> for Point {
+  type Output = Point;
+
+  fn div(self, rhs: f64) -> Point {
+    return Point::new(self.x / rhs, self.y / rhs);
+  }
+}
+
+impl std::ops::Div<Point> for f64 {
+  type Output = Point;
+
+  fn div(self, rhs: Point) -> Point {
+    return Point::new(self / rhs.x, self / rhs.y);
   }
 }
