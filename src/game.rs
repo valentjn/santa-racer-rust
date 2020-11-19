@@ -57,13 +57,13 @@ struct DrawArguments<'a> {
 #[derive(PartialEq)]
 pub enum GameMode {
   Menu,
-  HelpPage1,
-  HelpPage2,
+  HelpSplash1,
+  HelpSplash2,
   HighscoreTable,
   Running,
-  Won,
-  LostDueToTime,
-  LostDueToDamage,
+  WonSplash,
+  LostDueToDamageSplash,
+  LostDueToTimeSplash,
   NewHighscore,
 }
 
@@ -155,15 +155,17 @@ impl<'a> Game<'a> {
                 "Could not change fullscreen state");
 
           } else if (keycode == sdl2::keyboard::Keycode::F1)
-                && ((self.mode == GameMode::Menu) || (self.mode == GameMode::HelpPage1)
-                  || (self.mode == GameMode::HelpPage2) || (self.mode == GameMode::HighscoreTable)) {
-            self.mode = GameMode::HelpPage1;
+                && ((self.mode == GameMode::Menu) || (self.mode == GameMode::HelpSplash1)
+                  || (self.mode == GameMode::HelpSplash2)
+                  || (self.mode == GameMode::HighscoreTable)) {
+            self.mode = GameMode::HelpSplash1;
             self.highscore_table.hide();
 
           } else if (keycode == sdl2::keyboard::Keycode::F2)
-                && ((self.mode == GameMode::Menu) || (self.mode == GameMode::HelpPage1)
-                  || (self.mode == GameMode::HelpPage2) || (self.mode == GameMode::HighscoreTable)) {
-            self.mode = GameMode::HelpPage2;
+                && ((self.mode == GameMode::Menu) || (self.mode == GameMode::HelpSplash1)
+                  || (self.mode == GameMode::HelpSplash2)
+                  || (self.mode == GameMode::HighscoreTable)) {
+            self.mode = GameMode::HelpSplash2;
             self.highscore_table.hide();
 
           } else if (keycode == sdl2::keyboard::Keycode::F3) && (self.mode == GameMode::Menu) {
@@ -194,7 +196,7 @@ impl<'a> Game<'a> {
               GameMode::Menu | GameMode::HighscoreTable => {
                 self.quit_flag = true;
               },
-              GameMode::HelpPage1 | GameMode::HelpPage2 => {
+              GameMode::HelpSplash1 | GameMode::HelpSplash2 => {
                 self.mode = GameMode::Menu;
               },
               GameMode::Running => {
@@ -209,7 +211,7 @@ impl<'a> Game<'a> {
 
           } else if ((keycode == sdl2::keyboard::Keycode::Escape)
                   || (keycode == sdl2::keyboard::Keycode::Space))
-                && ((self.mode == GameMode::HelpPage1) || (self.mode == GameMode::HelpPage2)) {
+                && ((self.mode == GameMode::HelpSplash1) || (self.mode == GameMode::HelpSplash2)) {
             self.mode = GameMode::Menu;
 
           } else if (keycode == sdl2::keyboard::Keycode::Space)
@@ -279,11 +281,11 @@ impl<'a> Game<'a> {
 
   fn draw_to_canvas(canvas: &mut sdl2::render::WindowCanvas, draw_arguments: DrawArguments) {
     let background_image_name = match draw_arguments.mode {
-      GameMode::HelpPage1 => "help1",
-      GameMode::HelpPage2 => "help2",
-      GameMode::Won | GameMode::NewHighscore => "won",
-      GameMode::LostDueToTime => "lostDueToTime",
-      GameMode::LostDueToDamage => "lostDueToDamage",
+      GameMode::HelpSplash1 => "helpSplash1",
+      GameMode::HelpSplash2 => "helpSplash2",
+      GameMode::WonSplash | GameMode::NewHighscore => "wonSplash",
+      GameMode::LostDueToDamageSplash => "lostDueToDamageSplash",
+      GameMode::LostDueToTimeSplash => "lostDueToTimeSplash",
       _ => "background",
     };
 
