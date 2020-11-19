@@ -20,12 +20,6 @@ pub trait CloneAsI32Vector {
   fn clone_as_i32(&self) -> Vec<i32>;
 }
 
-impl CloneAsI32Vector for Vec<f64> {
-  fn clone_as_i32(&self) -> Vec<i32> {
-    return self.iter().map(|x| *x as i32).collect();
-  }
-}
-
 struct SingleTypeAssetLibrary<AssetType> {
   map: std::collections::HashMap<String, AssetType>,
 }
@@ -91,6 +85,12 @@ impl<'a> AssetLibrary<'a> {
 
   pub fn get_sound<S: Into<String>>(&'a self, name: S) -> &'a Sound {
     return self.sound_library.get_asset(name).unwrap_or(&Sound::NONE);
+  }
+}
+
+impl CloneAsI32Vector for Vec<f64> {
+  fn clone_as_i32(&self) -> Vec<i32> {
+    return self.iter().map(|x| *x as i32).collect();
   }
 }
 
