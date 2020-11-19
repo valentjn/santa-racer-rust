@@ -103,7 +103,7 @@ impl<'a, AssetType> SingleTypeAssetLibrary<AssetType> {
 
   fn load_assets_from_path<S: Into<String>, F>(&mut self, dir_path: &std::path::Path,
         extension: S, load_fn: F, verbose: bool) where F: Fn(&std::path::Path) -> AssetType {
-    let extension: String = extension.into();
+    let extension = extension.into();
     let mut entry_paths: Vec<std::path::PathBuf> = dir_path.read_dir()
         .expect(format!("Could not read directory '{}'", dir_path.display()).as_str())
         .filter_map(|x| x.ok()).map(|x| x.path()).collect();
@@ -122,7 +122,7 @@ impl<'a, AssetType> SingleTypeAssetLibrary<AssetType> {
   }
 
   fn get_asset<S: Into<String>>(&'a self, name: S) -> Option<&'a AssetType> {
-    let name: String = name.into();
+    let name = name.into();
     return self.map.get(&name);
   }
 }
@@ -137,7 +137,7 @@ impl SingleTypeAssetLibrary<Vec<f64>> {
     let file = std::fs::File::open(file_path).expect(
         format!("Could not open file '{}'", file_path.display()).as_str());
     let reader = std::io::BufReader::new(file);
-    let mut data: Vec<f64> = Vec::new();
+    let mut data = Vec::new();
 
     for line in reader.lines() {
       let line = line.expect(format!(
@@ -185,7 +185,7 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
         |file_path| {
           let asset_name = file_path.file_stem().expect("Could not get file stem").to_str()
               .expect("Could not convert file stem to string");
-          let number_of_frames: (i32, i32) = match numbers_of_frames.get(asset_name) {
+          let number_of_frames = match numbers_of_frames.get(asset_name) {
             Some(number_of_frames) => *number_of_frames,
             None => (1, 1),
           };
@@ -433,8 +433,8 @@ impl Sound {
 
   pub fn play_with_volume_and_pan(&self, volume: f64, pan: f64) {
     if let Some(chunk) = &self.chunk {
-      let left: u8 = (2.0 * (1.0 - pan) * 255.0).max(0.0).min(255.0) as u8;
-      let right: u8 = (2.0 * pan * 255.0).max(0.0).min(255.0) as u8;
+      let left = (2.0 * (1.0 - pan) * 255.0).max(0.0).min(255.0) as u8;
+      let right = (2.0 * pan * 255.0).max(0.0).min(255.0) as u8;
 
       let channel = Sound::get_free_channel().expect("Could not find free channel");
       channel.set_volume((128.0 * volume) as i32);
