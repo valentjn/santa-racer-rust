@@ -15,6 +15,8 @@ pub struct SdlWrapper {
 
   mixer: Option<sdl2::mixer::Sdl2MixerContext>,
   pub event_pump: sdl2::EventPump,
+
+  pub text_input_util: sdl2::keyboard::TextInputUtil,
 }
 
 const WINDOW_WIDTH: u32 = 640;
@@ -47,6 +49,7 @@ impl SdlWrapper {
     }
 
     let event_pump = sdl.event_pump().expect("Could not create event pump");
+    let text_input_util = video_subsystem.text_input();
 
     return SdlWrapper{
       sdl: sdl,
@@ -56,6 +59,8 @@ impl SdlWrapper {
 
       mixer: mixer,
       event_pump: event_pump,
+
+      text_input_util: text_input_util,
     };
   }
 }

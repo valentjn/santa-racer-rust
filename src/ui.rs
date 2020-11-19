@@ -19,7 +19,10 @@ pub struct Score<'a> {
   gift_points: f64,
   damage_points: f64,
   remaining_duration: std::time::Duration,
-  finished: bool,
+  score_points: f64,
+  won: bool,
+  lost_due_to_damage: bool,
+  lost_due_to_time: bool,
   game_start_instant: std::time::Instant,
   last_update_instant: std::time::Instant,
 
@@ -28,6 +31,11 @@ pub struct Score<'a> {
   time_position_x: f64,
   margin_x: f64,
   position_y: f64,
+  max_damage_points: f64,
+  game_duration: std::time::Duration,
+  score_points_per_gift_point: f64,
+  score_points_per_damage_point: f64,
+  score_points_per_remaining_second: f64,
 }
 
 pub struct HighscoreTable<'a> {
@@ -35,11 +43,13 @@ pub struct HighscoreTable<'a> {
   canvas_size: asset::Point,
 
   game_mode: game::GameMode,
+  new_highscore_index: usize,
 
   size: Point,
   position: Point,
   inner_margin: Point,
   number_of_rows: f64,
+  max_name_length: usize,
 }
 
 pub struct Font<'a> {
@@ -79,7 +89,10 @@ impl<'a> Score<'a> {
       gift_points: 0.0,
       damage_points: 0.0,
       remaining_duration: std::time::Duration::from_secs_f64(0.0),
-      finished: false,
+      score_points: 0.0,
+      won: false,
+      lost_due_to_time: false,
+      lost_due_to_damage: false,
       game_start_instant: now,
       last_update_instant: now,
 
@@ -88,6 +101,11 @@ impl<'a> Score<'a> {
       time_position_x: 535.0,
       margin_x: 35.0,
       position_y: gift_image.height() / 2.0,
+      max_damage_points: 500.0,
+      game_duration: std::time::Duration::from_secs_f64(450.0),
+      score_points_per_gift_point: 1.0,
+      score_points_per_damage_point: -2.0,
+      score_points_per_remaining_second: 10.0,
     };
   }
 
@@ -95,12 +113,17 @@ impl<'a> Score<'a> {
     self.game_mode = game::GameMode::Running;
     self.gift_points = 0.0;
     self.damage_points = 0.0;
-    self.remaining_duration = std::time::Duration::from_secs_f64(450.0);
+    self.remaining_duration = self.game_duration;
+    self.score_points = 0.0;
+    self.won = false;
+    self.lost_due_to_time = false;
+    self.lost_due_to_damage = false;
     self.game_start_instant = game_start_instant;
     self.last_update_instant = std::time::Instant::now();
   }
 
   pub fn start_menu(&mut self) {
+    self.start_game(std::time::Instant::now());
     self.game_mode = game::GameMode::Menu;
   }
 
@@ -115,10 +138,18 @@ impl<'a> Score<'a> {
   pub fn do_logic(&mut self) {
     let now = std::time::Instant::now();
 
-    if (self.game_mode == game::GameMode::Running) && (now >= self.game_start_instant) {
-      self.remaining_duration -= now - self.last_update_instant;
-      let zero_duration = std::time::Duration::from_secs_f64(0.0);
-      if self.remaining_duration < zero_duration { self.remaining_duration = zero_duration; }
+    if (self.game_mode == game::GameMode::Running) && (now >= self.game_start_instant)
+          && !self.won {
+      let duration_since_last_update = now - self.last_update_instant;
+
+      if self.remaining_duration >= duration_since_last_update {
+        self.remaining_duration -= duration_since_last_update;
+      } else {
+        self.remaining_duration = std::time::Duration::from_secs_f64(0.0);
+        self.lost_due_to_time = true;
+      }
+
+      self.lost_due_to_damage = self.damage_points > self.max_damage_points;
     }
 
     self.last_update_instant = now;
@@ -150,12 +181,30 @@ impl<'a> Score<'a> {
     }
   }
 
-  pub fn finished(&self) -> bool {
-    return self.finished;
+  pub fn won(&self) -> bool {
+    return self.won;
   }
 
-  pub fn set_finished(&mut self, finished: bool) {
-    self.finished = finished;
+  pub fn set_won(&mut self, won: bool) {
+    self.won = won;
+
+    if won {
+      self.score_points = self.score_points_per_gift_point * self.gift_points
+          + self.score_points_per_damage_point * self.damage_points
+          + self.score_points_per_remaining_second * self.remaining_duration.as_secs_f64();
+    }
+  }
+
+  pub fn lost_due_to_damage(&self) -> bool {
+    return self.lost_due_to_damage;
+  }
+
+  pub fn lost_due_to_time(&self) -> bool {
+    return self.lost_due_to_time;
+  }
+
+  pub fn score_points(&self) -> f64 {
+    return self.score_points;
   }
 }
 
@@ -180,11 +229,13 @@ impl<'a> HighscoreTable<'a> {
       canvas_size: canvas_size,
 
       game_mode: game::GameMode::Menu,
+      new_highscore_index: 0,
 
       size: size,
       position: position,
       inner_margin: Point::new(20.0, 20.0),
       number_of_rows: 10.0,
+      max_name_length: 16,
     };
   }
 
@@ -194,6 +245,11 @@ impl<'a> HighscoreTable<'a> {
 
   pub fn hide(&mut self) {
     self.game_mode = game::GameMode::Menu;
+  }
+
+  pub fn new_highscore(&mut self, new_highscore_index: usize) {
+    self.game_mode = game::GameMode::NewHighscore;
+    self.new_highscore_index = new_highscore_index;
   }
 
   pub fn draw<RenderTarget: sdl2::render::RenderTarget>(
@@ -212,12 +268,26 @@ impl<'a> HighscoreTable<'a> {
     for (i, highscore) in highscores.iter().enumerate() {
       let dst_point = Point::new(self.position.x() + self.inner_margin.x(),
           self.position.y() + self.inner_margin.y() + offset_y * (i as f64));
-      font.draw_monospace(canvas, dst_point, highscore.name(), Alignment::TopLeft);
+      let mut name = highscore.name();
+
+      if (self.game_mode == game::GameMode::NewHighscore) && (i == self.new_highscore_index) {
+        name += "_";
+      }
+
+      font.draw_monospace(canvas, dst_point, name, Alignment::TopLeft);
 
       let dst_point = Point::new(self.position.x() + self.size.x() - self.inner_margin.y(),
           dst_point.y());
-      font.draw_monospace(canvas, dst_point, highscore.score().to_string(), Alignment::TopRight);
+      font.draw_monospace(canvas, dst_point, highscore.points().to_string(), Alignment::TopRight);
     }
+  }
+
+  pub fn new_highscore_index(&self) -> usize {
+    return self.new_highscore_index;
+  }
+
+  pub fn max_name_length(&self) -> usize {
+    return self.max_name_length;
   }
 }
 

@@ -16,6 +16,7 @@ pub trait Npc {
 
   fn tile(&self) -> (usize, usize);
   fn z_order(&self) -> f64;
+  fn check_collision_with_sleigh_in_menu_mode(&self) -> bool;
 }
 
 struct NpcBase<'a> {
@@ -213,6 +214,10 @@ impl<'a> Npc for Angel<'a> {
   fn z_order(&self) -> f64 {
     return 0.0;
   }
+
+  fn check_collision_with_sleigh_in_menu_mode(&self) -> bool {
+    return false;
+  }
 }
 
 impl<'a> Balloon<'a> {
@@ -298,6 +303,10 @@ impl<'a> Npc for Balloon<'a> {
   fn z_order(&self) -> f64 {
     return -1.0;
   }
+
+  fn check_collision_with_sleigh_in_menu_mode(&self) -> bool {
+    return false;
+  }
 }
 
 impl<'a> Cloud<'a> {
@@ -341,6 +350,10 @@ impl<'a> Npc for Cloud<'a> {
   fn z_order(&self) -> f64 {
     return 1.0;
   }
+
+  fn check_collision_with_sleigh_in_menu_mode(&self) -> bool {
+    return false;
+  }
 }
 
 impl<'a> Finish<'a> {
@@ -350,10 +363,6 @@ impl<'a> Finish<'a> {
       npc_base: NpcBase::new(asset_library.get_image("finish"),
           level.canvas_size(), level.tile_size(), tile, 0.0),
     };
-  }
-
-  fn z_order(&self) -> f64 {
-    return 0.0;
   }
 }
 
@@ -365,9 +374,9 @@ impl<'a> Npc for Finish<'a> {
 
   fn check_collision_with_sleigh(&mut self, score: &mut ui::Score,
         level_offset_x: f64, sleigh: &mut sleigh::Sleigh) {
-    if level_offset_x + sleigh.position().x() + sleigh.size().x()
+    if level_offset_x + sleigh.position().x() + sleigh.size().x() / 2.0
           >= self.npc_base.position.x() + self.npc_base.size.x() / 2.0 {
-      score.set_finished(true);
+      score.set_won(true);
     }
   }
 
@@ -381,6 +390,10 @@ impl<'a> Npc for Finish<'a> {
 
   fn z_order(&self) -> f64 {
     return 0.0;
+  }
+
+  fn check_collision_with_sleigh_in_menu_mode(&self) -> bool {
+    return true;
   }
 }
 
@@ -471,6 +484,10 @@ impl<'a> Npc for Goblin<'a> {
   fn z_order(&self) -> f64 {
     return 0.0;
   }
+
+  fn check_collision_with_sleigh_in_menu_mode(&self) -> bool {
+    return false;
+  }
 }
 
 impl<'a> Snowman<'a> {
@@ -555,5 +572,9 @@ impl<'a> Npc for Snowman<'a> {
 
   fn z_order(&self) -> f64 {
     return 0.0;
+  }
+
+  fn check_collision_with_sleigh_in_menu_mode(&self) -> bool {
+    return false;
   }
 }

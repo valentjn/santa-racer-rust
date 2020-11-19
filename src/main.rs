@@ -18,14 +18,14 @@ mod sleigh;
 mod ui;
 
 fn main() {
-  let options = options::Options::load();
+  let mut options = options::Options::load();
 
   let mut sdl_wrapper = sdl::SdlWrapper::new(&options);
 
   let asset_library = asset::AssetLibrary::new(&sdl_wrapper.texture_creator, &options);
 
   let mut game = game::Game::new(&mut sdl_wrapper.canvas, &sdl_wrapper.texture_creator,
-      &mut sdl_wrapper.event_pump, &asset_library, &options);
+      &mut sdl_wrapper.event_pump, &sdl_wrapper.text_input_util, &asset_library, &mut options);
 
   game.run_loop();
 

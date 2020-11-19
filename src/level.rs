@@ -283,6 +283,12 @@ impl<'a> Level<'a> {
       for npc in &mut self.npcs {
         npc.check_collision_with_sleigh(score, self.offset_x, sleigh);
       }
+    } else if self.game_mode == game::GameMode::Menu {
+      for npc in &mut self.npcs {
+        if npc.check_collision_with_sleigh_in_menu_mode() {
+          npc.check_collision_with_sleigh(score, self.offset_x, sleigh);
+        }
+      }
     }
 
     let mut delete_npc: Vec<bool> = vec![true; self.npcs.len()];

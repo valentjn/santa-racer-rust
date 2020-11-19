@@ -14,12 +14,8 @@ pub struct Options {
   sound_enabled: bool,
   verbose_enabled: bool,
   highscores: Vec<Highscore>,
-}
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Highscore {
-  name: String,
-  score: i32,
+  number_of_highscores: usize,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -27,19 +23,10 @@ struct ConfigFile {
   highscores: Vec<Highscore>,
 }
 
-impl std::default::Default for ConfigFile {
-  fn default() -> ConfigFile {
-    return ConfigFile{
-      highscores: Vec::new(),
-    };
-  }
-}
-
-fn print_description() {
-  println!("Santa Racer - an open-source clone of \"Nikolaus Express 2000\".");
-  println!("Source code: Copyright (C) 2008-2020 Julian Valentin, licensed under MPL 2.0.");
-  println!("Exception: External assets such as music, sounds, and textures may be subject to \
-      be intellectual property of third parties.");
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Highscore {
+  name: String,
+  points: i32,
 }
 
 impl Options {
@@ -51,15 +38,17 @@ impl Options {
       sound_enabled: true,
       verbose_enabled: false,
       highscores: config_file.highscores,
+
+      number_of_highscores: 10,
     };
 
-    for _ in options.highscores.len() .. 10 {
+    for _ in options.highscores.len() .. options.number_of_highscores {
       options.highscores.push(Highscore::new("Leer", 0));
     }
 
     for argument in std::env::args().skip(1) {
       if (argument == "-h") || (argument == "--help") {
-        print_description();
+        Options::print_description();
         println!("");
         println!("-f, --fullscreen     enable fullscreen mode");
         println!("    --no-fullscreen  disable fullscreen mode");
@@ -74,7 +63,7 @@ impl Options {
         println!("Santa Racer {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
       } else if (argument == "-L") || (argument == "--license") {
-        print_description();
+        Options::print_description();
         std::process::exit(0);
       } else if (argument == "-f") || (argument == "--fullscreen") {
         options.fullscreen_enabled = true;
@@ -92,6 +81,18 @@ impl Options {
     return options;
   }
 
+  pub fn save(&self) {
+    confy::store("santa-racer", ConfigFile::new(self.highscores.to_vec())).expect(
+        "Could not save options");
+  }
+
+  fn print_description() {
+    println!("Santa Racer - an open-source clone of \"Nikolaus Express 2000\".");
+    println!("Source code: Copyright (C) 2008-2020 Julian Valentin, licensed under MPL 2.0.");
+    println!("Exception: External assets such as music, sounds, and textures may be subject to \
+        be intellectual property of third parties.");
+  }
+
   pub fn fullscreen_enabled(&self) -> bool {
     return self.fullscreen_enabled;
   }
@@ -104,32 +105,44 @@ impl Options {
     return self.sound_enabled;
   }
 
-  pub fn set_sound_enabled(&mut self, sound_enabled: bool) {
-    self.sound_enabled = sound_enabled;
-  }
-
   pub fn verbose_enabled(&self) -> bool {
     return self.verbose_enabled;
   }
 
-  pub fn set_verbose_enabled(&mut self, verbose_enabled: bool) {
-    self.verbose_enabled = verbose_enabled;
+  pub fn number_of_highscores(&self) -> usize {
+    return self.number_of_highscores;
   }
 
   pub fn highscores(&self) -> &Vec<Highscore> {
     return &self.highscores;
   }
 
-  pub fn set_highscores(&mut self, highscores: Vec<Highscore>) {
-    self.highscores = highscores;
+  pub fn highscores_mut(&mut self) -> &mut Vec<Highscore> {
+    return &mut self.highscores;
+  }
+}
+
+impl ConfigFile {
+  fn new(highscores: Vec<Highscore>) -> ConfigFile {
+    return ConfigFile {
+      highscores: highscores,
+    };
+  }
+}
+
+impl std::default::Default for ConfigFile {
+  fn default() -> ConfigFile {
+    return ConfigFile{
+      highscores: Vec::new(),
+    };
   }
 }
 
 impl Highscore {
-  pub fn new<S: Into<String>>(name: S, score: i32) -> Highscore {
+  pub fn new<S: Into<String>>(name: S, points: i32) -> Highscore {
     return Highscore{
       name: name.into(),
-      score: score,
+      points: points,
     };
   }
 
@@ -141,11 +154,11 @@ impl Highscore {
     self.name = name.into();
   }
 
-  pub fn score(&self) -> i32 {
-    return self.score;
+  pub fn points(&self) -> i32 {
+    return self.points;
   }
 
-  pub fn set_score(&mut self, score: i32) {
-    self.score = score;
+  pub fn set_points(&mut self, points: i32) {
+    self.points = points;
   }
 }
