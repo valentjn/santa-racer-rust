@@ -105,7 +105,8 @@ impl<'a, AssetType> SingleTypeAssetLibrary<AssetType> {
         extension: S, load_fn: F, verbose: bool) where F: Fn(&std::path::Path) -> AssetType {
     let extension: String = extension.into();
     let mut entry_paths: Vec<std::path::PathBuf> = dir_path.read_dir()
-        .expect("Could not read directory").filter_map(|x| x.ok()).map(|x| x.path()).collect();
+        .expect(format!("Could not read directory '{}'", dir_path.display()).as_str())
+        .filter_map(|x| x.ok()).map(|x| x.path()).collect();
     entry_paths.sort();
 
     for entry_path in entry_paths {
@@ -133,14 +134,14 @@ impl SingleTypeAssetLibrary<Vec<f64>> {
   }
 
   fn load_data(file_path: &std::path::Path) -> Vec<f64> {
-    let file_path_str = file_path.to_str().expect("Could not convert path to string");
     let file = std::fs::File::open(file_path).expect(
-        format!("Could not open file '{}'", file_path_str).as_str());
+        format!("Could not open file '{}'", file_path.display()).as_str());
     let reader = std::io::BufReader::new(file);
     let mut data: Vec<f64> = Vec::new();
 
     for line in reader.lines() {
-      let line = line.expect(format!("Could not read line from '{}'", file_path_str).as_str());
+      let line = line.expect(format!(
+          "Could not read line from '{}'", file_path.display()).as_str());
 
       for entry in line.split(char::is_whitespace) {
         if entry.is_empty() { continue; }
