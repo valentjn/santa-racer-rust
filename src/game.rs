@@ -329,10 +329,17 @@ impl<'a> Game<'a> {
             &mut self.sleigh);
         self.sleigh.do_logic(&mut self.score, &mut self.level);
 
-        if self.score.won() && (self.mode == GameMode::Running) {
-          self.won_sound.play();
-          self.mode = GameMode::WonSplash;
-          self.splash_end_instant = now + self.splash_duration;
+        if self.score.won() {
+          if self.mode == GameMode::Running {
+            self.won_sound.play();
+            self.mode = GameMode::WonSplash;
+            self.splash_end_instant = now + self.splash_duration;
+          } else {
+            self.score.start_menu();
+            self.landscape.start_menu();
+            self.level.start_menu();
+            self.sleigh.start_menu();
+          }
         } else if self.score.lost_due_to_damage() {
           self.lost_sound.play();
           self.mode = GameMode::LostDueToDamageSplash;
