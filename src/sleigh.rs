@@ -199,6 +199,9 @@ impl<'a> Sleigh<'a> {
   pub fn start_game(&mut self, game_start_instant: std::time::Instant) {
     self.game_mode = game::GameMode::Running;
     self.position = self.game_start_position;
+    self.velocity = Point::zero();
+    self.velocity_point1 = Point::zero();
+    self.velocity_point2 = Point::zero();
     self.counting_down = true;
     self.drunk = false;
     self.invincible = false;
