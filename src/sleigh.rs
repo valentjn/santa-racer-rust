@@ -387,6 +387,8 @@ impl<'a> Sleigh<'a> {
     if self.invincible {
       self.invincible_blink = ((self.invincible_reset_instant - now).as_secs_f64()
           / self.invincible_blink_period_duration.as_secs_f64()) % 1.0 >= 0.5;
+    } else {
+      self.invincible_blink = false;
     }
 
     {
