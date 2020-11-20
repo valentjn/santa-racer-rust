@@ -25,6 +25,7 @@ pub struct Game<'a> {
   last_fps_update_instant: std::time::Instant,
 
   asset_library: &'a asset::AssetLibrary<'a>,
+  music: &'a asset::Song<'a>,
   won_sound: &'a asset::Sound,
   lost_sound: &'a asset::Sound,
 
@@ -88,7 +89,8 @@ impl<'a> Game<'a> {
         None, buffer_size.x() as u32, buffer_size.y() as u32).expect(
         "Could not create buffer texture");
 
-    asset_library.get_song("music").play();
+    let music = asset_library.get_song("music");
+    music.play();
 
     let now = std::time::Instant::now();
 
@@ -109,6 +111,7 @@ impl<'a> Game<'a> {
       last_fps_update_instant: now,
 
       asset_library: asset_library,
+      music: music,
       won_sound: asset_library.get_sound("won"),
       lost_sound: asset_library.get_sound("lost"),
 
@@ -291,6 +294,8 @@ impl<'a> Game<'a> {
           let highscore_after_new_score = highscores.iter().enumerate().find(
               |x| x.1.points() as f64 <= score_points);
 
+          self.music.play();
+
           if let Some((new_highscore_index, _)) = highscore_after_new_score {
             self.mode = GameMode::NewHighscore;
             self.highscore_table.new_highscore(new_highscore_index);
@@ -314,6 +319,7 @@ impl<'a> Game<'a> {
       },
       GameMode::LostDueToDamageSplash | GameMode::LostDueToTimeSplash => {
         if now >= self.splash_end_instant {
+          self.music.play();
           self.mode = GameMode::Menu;
           self.score.start_menu();
           self.landscape.start_menu();
@@ -331,6 +337,7 @@ impl<'a> Game<'a> {
 
         if self.score.won() {
           if self.mode == GameMode::Running {
+            self.music.stop();
             self.won_sound.play();
             self.mode = GameMode::WonSplash;
             self.splash_end_instant = now + self.splash_duration;
@@ -341,10 +348,12 @@ impl<'a> Game<'a> {
             self.sleigh.start_menu();
           }
         } else if self.score.lost_due_to_damage() {
+          self.music.stop();
           self.lost_sound.play();
           self.mode = GameMode::LostDueToDamageSplash;
           self.splash_end_instant = now + self.splash_duration;
         } else if self.score.lost_due_to_time() {
+          self.music.stop();
           self.lost_sound.play();
           self.mode = GameMode::LostDueToTimeSplash;
           self.splash_end_instant = now + self.splash_duration;

@@ -395,6 +395,10 @@ impl<'a> Song<'a> {
   pub fn play(&self) {
     if let Some(music) = &self.music { music.play(-1).expect("Could not play song"); }
   }
+
+  pub fn stop(&self) {
+    sdl2::mixer::Music::halt();
+  }
 }
 
 impl Sound {
