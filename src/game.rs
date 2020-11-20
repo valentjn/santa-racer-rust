@@ -283,31 +283,8 @@ impl<'a> Game<'a> {
     let now = std::time::Instant::now();
 
     match self.mode {
-      GameMode::WonSplash | GameMode::LostDueToDamageSplash | GameMode::LostDueToTimeSplash => {},
-      _ => {
-        self.score.do_logic();
-        self.landscape.do_logic(&self.level);
-        self.level.do_logic(self.asset_library, &mut self.score, &mut self.landscape,
-            &mut self.sleigh);
-        self.sleigh.do_logic(&mut self.score, &mut self.level);
-      }
-    }
-
-    if self.score.won() && (self.mode == GameMode::Running) {
-      self.won_sound.play();
-      self.mode = GameMode::WonSplash;
-      self.splash_end_instant = now + self.splash_duration;
-    } else if self.score.lost_due_to_damage() {
-      self.lost_sound.play();
-      self.mode = GameMode::LostDueToDamageSplash;
-      self.splash_end_instant = now + self.splash_duration;
-    } else if self.score.lost_due_to_time() {
-      self.lost_sound.play();
-      self.mode = GameMode::LostDueToTimeSplash;
-      self.splash_end_instant = now + self.splash_duration;
-    } else if now >= self.splash_end_instant {
-      match self.mode {
-        GameMode::WonSplash => {
+      GameMode::WonSplash => {
+        if now >= self.splash_end_instant {
           let score_points = self.score.score_points();
           let number_of_highscores = self.options.number_of_highscores();
           let highscores = self.options.highscores_mut();
@@ -333,15 +310,38 @@ impl<'a> Game<'a> {
           self.landscape.start_menu();
           self.level.start_menu();
           self.sleigh.start_menu();
-        },
-        GameMode::LostDueToDamageSplash | GameMode::LostDueToTimeSplash => {
+        }
+      },
+      GameMode::LostDueToDamageSplash | GameMode::LostDueToTimeSplash => {
+        if now >= self.splash_end_instant {
           self.mode = GameMode::Menu;
           self.score.start_menu();
           self.landscape.start_menu();
           self.level.start_menu();
           self.sleigh.start_menu();
-        },
-        _ => {},
+        }
+      },
+      GameMode::HelpSplash1 | GameMode::HelpSplash2 => {},
+      _ => {
+        self.score.do_logic();
+        self.landscape.do_logic(&self.level);
+        self.level.do_logic(self.asset_library, &mut self.score, &mut self.landscape,
+            &mut self.sleigh);
+        self.sleigh.do_logic(&mut self.score, &mut self.level);
+
+        if self.score.won() && (self.mode == GameMode::Running) {
+          self.won_sound.play();
+          self.mode = GameMode::WonSplash;
+          self.splash_end_instant = now + self.splash_duration;
+        } else if self.score.lost_due_to_damage() {
+          self.lost_sound.play();
+          self.mode = GameMode::LostDueToDamageSplash;
+          self.splash_end_instant = now + self.splash_duration;
+        } else if self.score.lost_due_to_time() {
+          self.lost_sound.play();
+          self.mode = GameMode::LostDueToTimeSplash;
+          self.splash_end_instant = now + self.splash_duration;
+        }
       }
     }
   }
