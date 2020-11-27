@@ -2,6 +2,7 @@
 /assets/images/
 /assets/songs/
 /assets/sounds/
+/msvc/
 /target/
 
 /Cargo.lock
