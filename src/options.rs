@@ -1,4 +1,4 @@
-/* Copyright (C) 2008-2020 Julian Valentin
+/* Copyright (C) 2020 Julian Valentin
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -88,7 +88,7 @@ impl Options {
 
   fn print_description() {
     println!("Santa Racer - an open-source clone of \"Nikolaus Express 2000\".");
-    println!("Source code: Copyright (C) 2008-2020 Julian Valentin, licensed under MPL 2.0.");
+    println!("Source code: Copyright (C) 2020 Julian Valentin, licensed under MPL 2.0.");
     println!("Exception: External assets such as music, sounds, and textures may be subject to \
         be intellectual property of third parties.");
   }
