@@ -6,3 +6,5 @@
 /target/
 
 /Cargo.lock
+/santa-racer-*.tar.gz
+/santa-racer-*.zip
