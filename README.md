@@ -1,4 +1,8 @@
-# Santa Racer (Rust Port)
+# Santa Racer (Rust Version)
+
+[![latest release](https://badgen.net/github/release/valentjn/santa-racer-rust/stable)](https://github.com/valentjn/santa-racer-rust/releases)&nbsp;
+[![CI](https://github.com/valentjn/santa-racer-rust/workflows/CI/badge.svg?branch=develop)](https://github.com/valentjn/santa-racer-rust/actions?query=workflow%3ACI+branch%3Adevelop)&nbsp;
+[![license: MPL-2.0](https://badgen.net/github/license/valentjn/santa-racer-rust)](https://github.com/valentjn/santa-racer-rust/blob/develop/LICENSE.md)
 
 Santa Racer is an open-source clone of “Nikolaus Express 2000,” a Christmas-themed advergame/screensaver by German advertising agency Anders und Seim Neue Medien AG. The goal is to steer Santa's sleigh over the roofs of a snowy village and to drop presents into chimneys to score points.
 
