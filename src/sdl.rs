@@ -42,10 +42,11 @@ impl SdlWrapper {
     let mut mixer: Option<sdl2::mixer::Sdl2MixerContext> = None;
 
     if options.sound_enabled() {
-      mixer.replace(sdl2::mixer::init(sdl2::mixer::InitFlag::OGG).expect(
-          "Could not initialize mixer"));
+      sdl.audio().expect("Could not initialize audio subsystem");
       sdl2::mixer::open_audio(AUDIO_FREQUENCY, sdl2::mixer::DEFAULT_FORMAT,
           AUDIO_NUMBER_OF_CHANNELS, AUDIO_CHUNK_SIZE).expect("Could not open audio");
+      mixer.replace(sdl2::mixer::init(sdl2::mixer::InitFlag::OGG).expect(
+          "Could not initialize mixer"));
     }
 
     let event_pump = sdl.event_pump().expect("Could not create event pump");
