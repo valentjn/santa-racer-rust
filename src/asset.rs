@@ -170,7 +170,7 @@ impl<'a> SingleTypeAssetLibrary<Image<'a>> {
     numbers_of_frames.insert("giftBalloon", (8, 1));
     numbers_of_frames.insert("goblin", (19, 1));
     numbers_of_frames.insert("heartBalloon", (8, 1));
-    numbers_of_frames.insert("level", (1, 81));
+    numbers_of_frames.insert("level", (8, 11));
     numbers_of_frames.insert("reindeer", (14, 1));
     numbers_of_frames.insert("shield", (8, 1));
     numbers_of_frames.insert("shieldBalloon", (8, 1));

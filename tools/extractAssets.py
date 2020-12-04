@@ -240,10 +240,19 @@ def main():
               "-family", "Palatino", "-style", "Normal", "-pointsize", "14",
               "-fill", "white", "-gravity", "NorthWest",
               "-annotate", "-1x-1+51+8080", "Frohes Fest", dstFilePath])
+
+          subprocess.run(["convert", dstFilePath, "-crop", "128x128",
+              os.path.join(tmpDirPath, "levelPart%03d.png")])
+          levelPartFilePaths = [os.path.join(tmpDirPath, x) for x in sorted(os.listdir(tmpDirPath))
+              if x.startswith("levelPart") and x.endswith(".png")]
+          subprocess.run(["montage"] + levelPartFilePaths + ["-mode", "Concatenate", "-tile", "8x",
+              "-background", "none", dstFilePath])
+
         elif dstFileName in ["bigStar.png", "drunkStar.png", "electrocutedReindeer.png",
               "electrocutedSleigh.png", "shield.png", "smallDrunkStar.png", "smallStar.png",
               "star.png"]:
           subprocess.run(["convert", dstFilePath, "-alpha", "copy", dstFilePath])
+
       elif dstExtension == ".wav":
         shutil.copyfile(srcFilePath, dstFilePath)
 
