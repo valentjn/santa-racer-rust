@@ -33,6 +33,7 @@ Before running Santa Racer, the assets must be extracted from the original game 
 - SDL-devel 2.0.12 or later
 - SDL_image-devel 2.0.5 or later
 - SDL_mixer-devel 2.0.4 or later
+- On Linux: GCC
 - On Windows: Python 3.6.0 or later
 - On Windows: Windows SDK and MSVC Build Tools v142 or later
 
@@ -45,6 +46,8 @@ If you're stuck while installing the requirements, a look at [.github/workflows/
 - Rust:
   1. Install rustup, either via package (`rustup` on Arch) or via `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
   2. If the Rust toolchain hasn't already been installed by the previous step, run `rustup update stable`
+- GCC:
+  - Ubuntu/Arch: `gcc`
 - SDL-devel, SDL_image-devel, SDL_mixer-devel: Via packages
   - Ubuntu: `libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev`
   - Arch: `sdl2 sdl2_image sdl2_mixer`
