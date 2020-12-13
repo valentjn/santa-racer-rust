@@ -8,7 +8,7 @@
 
 # Changelog
 
-## 1.0.1 (upcoming)
+## 1.0.1 (December 13, 2020)
 
 - Make level image fit into smaller buffers; fixes an error on systems with small graphics memory
 - Fix error `OGG support not available` when initializing SDL_mixer
