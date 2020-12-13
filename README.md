@@ -54,7 +54,7 @@ If you're stuck while installing the requirements, a look at [.github/workflows/
 - Rust:
   1. Install rustup, either via package (`rustup` on Arch) or via `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
   2. If the Rust toolchain hasn't already been installed by the previous step, run `rustup update stable`
-- GCC:
+- GCC: Via package
   - Ubuntu/Arch: `gcc`
 - SDL-devel, SDL_image-devel, SDL_mixer-devel: Via packages
   - Ubuntu: `libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev`
