@@ -141,6 +141,10 @@ impl<'a> Game<'a> {
       self.draw();
       self.finish_frame();
     }
+
+    if let Err(error) = self.canvas.window_mut().set_fullscreen(sdl2::video::FullscreenType::Off) {
+      println!("Could not disable fullscreen during exit: {}", error);
+    }
   }
 
   fn process_events(&mut self) {
