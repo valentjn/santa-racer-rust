@@ -8,6 +8,10 @@
 
 # Changelog
 
+## 1.0.2 (upcoming)
+
+- Disable fullscreen before exiting
+
 ## 1.0.1 (December 13, 2020)
 
 - Make level image fit into smaller buffers; fixes an error on systems with small graphics memory
