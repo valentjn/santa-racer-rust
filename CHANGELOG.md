@@ -8,7 +8,7 @@
 
 # Changelog
 
-## 1.0.2 (upcoming)
+## 1.0.2 (December 18, 2020)
 
 - Disable fullscreen before exiting
 
